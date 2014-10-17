@@ -141,6 +141,7 @@ class IndexerFullScan extends Indexer implements Serializable {
       }
       tokens.add(idx);
     }
+    s.close();
     return;
   }
   
