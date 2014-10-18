@@ -165,20 +165,67 @@ public class IndexerInvertedOccurrence extends Indexer {
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      _documents.get(docids[0]);
+      DocumentIndexed d = (DocumentIndexed) _documents.get(docids[0]);
+      d.setDocumentDetails(getDocumentDetails(query,docid));
+      return d;
     }
-    return nextDoc(query, maxDocId);
+    return nextDoc(query, maxDocId-1);
   }
   
-  private int next(String term,int docid) {
-    List<Integer> postingList = index.get(term);
-    if(postingList == null || postingList.get(postingList.size()-1) <= docid) {
+  private List<Integer> getDocumentDetails(Query query, int docid) {
+    List<Integer> docDetails = new ArrayList<Integer>();
+    for(String term:query._tokens) {
+      List<Integer> postingList = index.get(term);
+      int nextP = nextPos(term, docid);
+      int afterNextP = getNextDocPos(postingList, nextP);
+      for(int i=nextP+1;i<afterNextP;i++) {
+        docDetails.add(postingList.get(i));
+      }
+    }
+    return docDetails;
+  }
+  
+  private int getNextDocPos(List<Integer> postingList,int pos) {
+    if(pos >= postingList.size()-1) {
       return -1;
     }
-    if(postingList.get(1) > docid) {
-      return postingList.get(1);
+    return (pos+1+postingList.get(pos+1));
+  }
+  
+  private int nextPos(String term,int docid) {
+    List<Integer> postingList = index.get(term);
+    if(postingList == null) {
+      return -1;
     }
-    return postingList.get(binarySearch(term,1,postingList.size(),docid));
+    int pos = 0;
+    if(postingList.get(pos) > docid) {
+      return pos;
+    }
+    while(((pos = getNextDocPos(postingList, pos)) != -1) 
+        && (postingList.get(pos) <= docid)) {
+      if(postingList.get(pos) == docid) {
+        return getNextDocPos(postingList, pos);
+      }
+    }
+    if(pos != -1) {
+      return pos;
+    }
+    else {
+      return -1;
+    }
+  }
+  
+  //This method does a linear search.
+  //Binary search with skip pointers to be implemented.
+  private int next(String term,int docid) {
+    List<Integer> postingList = index.get(term);
+    int nextP = nextPos(term, docid);
+    if(nextP == -1) {
+      return -1;
+    }
+    else {
+      return postingList.get(nextP);
+    }
   }
   
   private int binarySearch(String term, int low, int high, int current) {
@@ -198,7 +245,16 @@ public class IndexerInvertedOccurrence extends Indexer {
   
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    return 0;
+    List<Integer> postingList = index.get(term);
+    if(postingList == null || (postingList.size() == 0)) {
+      return 0;
+    }
+    int pos = 0;
+    int count = 1;
+    while((pos = getNextDocPos(postingList, pos)) != -1) {
+      count += 1;
+    }
+    return count;
   }
 
   public int corpusTermFrequency() {
@@ -207,7 +263,16 @@ public class IndexerInvertedOccurrence extends Indexer {
   
   @Override
   public int corpusTermFrequency(String term) {
-    return 0;
+    List<Integer> postingList = index.get(term);
+    if(postingList == null || (postingList.size() == 0)) {
+      return 0;
+    }
+    int pos = 0;
+    int count = postingList.get(1);
+    while((pos = getNextDocPos(postingList, pos)) != -1) {
+      count += postingList.get(pos+1);
+    }
+    return count;
   }
 
   @Override
