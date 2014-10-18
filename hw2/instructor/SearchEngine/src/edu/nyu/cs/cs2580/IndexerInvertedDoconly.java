@@ -205,7 +205,7 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable {
       Document doc = _documents.get(docids[0]);
       return doc;
     }
-    return nextDoc(query, maxDocId);
+    return nextDoc(query, maxDocId-1);
   }
   
   private int next(String term,int docid) {
