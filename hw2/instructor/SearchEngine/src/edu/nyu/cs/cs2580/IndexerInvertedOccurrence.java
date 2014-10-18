@@ -21,7 +21,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
  */
 public class IndexerInvertedOccurrence extends Indexer {
   
-  private Vector<Document> _documents = new Vector<Document>();
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
 
   public IndexerInvertedOccurrence(Options options) {
@@ -68,7 +68,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     int numViews = Integer.parseInt(s.next());
     s.close();
 
-    Document doc = new DocumentIndexed(_documents.size());
+    DocumentIndexed doc = new DocumentIndexed(_documents.size());
     doc.setTitle(title);
     doc.setNumViews(numViews);
     _documents.add(doc);
@@ -165,8 +165,42 @@ public class IndexerInvertedOccurrence extends Indexer {
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      DocumentIndexed d = (DocumentIndexed) _documents.get(docids[0]);
+      DocumentIndexed d = _documents.get(docids[0]);
       d.setDocumentDetails(getDocumentDetails(query,docid));
+      return d;
+    }
+    return nextDoc(query, maxDocId-1);
+  }
+  
+  @Override
+  public Document nextDocument(Query query, int docid) {
+    int [] docIdPositions = new int[query._tokens.size()];
+    int i = 0;
+    boolean flag = true;
+    int maxDocId = -1;
+    List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
+    for(String term:query._tokens) {
+      postingLists.add(index.get(term));
+      docIdPositions[i] = nextPos(term,docid);
+      if(docIdPositions[i] == -1) {
+        return null;
+      }
+      if(i != 0) {
+        if(postingLists.get(i-1).get(docIdPositions[i-1]) != 
+            postingLists.get(i).get(docIdPositions[i])) {
+          flag = false;
+        }
+      }
+      if(maxDocId < postingLists.get(i).get(docIdPositions[i])) {
+        maxDocId = postingLists.get(i).get(docIdPositions[i]);
+      }
+      i++;
+    }
+    if(flag) {
+      //this doc contains all the terms!!
+      //all the query terms map to the same doc id
+      DocumentIndexed d = (DocumentIndexed) _documents.get(postingLists.get(0).get(docIdPositions[0]));
+      d.setDocumentDetails(getDocumentDetails(query,docIdPositions));
       return d;
     }
     return nextDoc(query, maxDocId-1);
@@ -181,6 +215,20 @@ public class IndexerInvertedOccurrence extends Indexer {
       for(int i=nextP+1;i<afterNextP;i++) {
         docDetails.add(postingList.get(i));
       }
+    }
+    return docDetails;
+  }
+  
+  private List<Integer> getDocumentDetails(Query query, int[] docIdPositions) {
+    List<Integer> docDetails = new ArrayList<Integer>();
+    int j=0;
+    for(String term:query._tokens) {
+      List<Integer> postingList = index.get(term);
+      int afterNextP = getNextDocPos(postingList, docIdPositions[j]);
+      for(int i=docIdPositions[j]+1;i<afterNextP;i++) {
+        docDetails.add(postingList.get(i));
+      }
+      j++;
     }
     return docDetails;
   }

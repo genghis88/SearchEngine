@@ -61,6 +61,8 @@ public abstract class Indexer {
    * null if no such document exists.
    */
   public abstract Document nextDoc(Query query, int docid);
+  
+  public Document nextDocument(Query query, int docid) {return new Document(0);}
 
   // APIs for index construction and loading.
 
