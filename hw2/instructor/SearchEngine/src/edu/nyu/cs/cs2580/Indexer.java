@@ -118,6 +118,8 @@ public abstract class Indexer {
 
   // Number of times {@code term} appeared in the document {@code url}.
   public abstract int documentTermFrequency(String term, String url);
+  
+  public int documentTermFrequency(String term, int docid) {return 0;}
 
   /**
    * All Indexers must be created through this factory class based on the

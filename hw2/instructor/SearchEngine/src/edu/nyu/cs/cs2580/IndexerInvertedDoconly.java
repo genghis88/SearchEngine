@@ -253,4 +253,8 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable {
     SearchEngine.Check(false, "Not implemented!");
     return 0;
   }
+  
+  public int documentTermFrequence(String term, int docid) {
+    return 0;
+  }
 }
