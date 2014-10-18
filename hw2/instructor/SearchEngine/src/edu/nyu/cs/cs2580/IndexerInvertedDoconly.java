@@ -7,9 +7,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Vector;
+import java.util.Scanner;
+import java.util.List;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+import java.io.File;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 /**
  * @CS2580: Implement this class for HW2.
@@ -22,6 +31,37 @@ public class IndexerInvertedDoconly extends Indexer {
   public IndexerInvertedDoconly(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
+  }
+  
+  public void test() throws Exception {
+    String corpusDirectoryString = _options._corpusPrefix + "/wiki";
+    System.out.println("Construct index from: " + corpusDirectoryString);
+    final File corpusDirectory = new File(corpusDirectoryString);
+    int x = 3;
+    for (final File fileEntry : corpusDirectory.listFiles()) {
+      if (!fileEntry.isDirectory()) {
+        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
+
+        Element head = doc.select("h1[id=firstHeading]").first();
+        System.out.println(head.text().trim());
+        Elements content_text = doc.select("div[id=mw-content-text]");
+        for (Element elem : content_text) {
+          Elements paras = elem.getElementsByTag("p");
+          Elements h2s = elem.getElementsByTag("h2");
+
+          for (Element h2 : h2s) {
+            System.out.println(h2.getElementsByClass("mw-headline").first());
+          }
+          for (Element para : paras) {
+            System.out.println(para.text().trim());
+          }
+        }
+
+      }
+      x--;
+      if (x == 0)
+        break;
+    }
   }
 
   @Override
@@ -134,22 +174,20 @@ public class IndexerInvertedDoconly extends Indexer {
     int [] docids = new int[query._tokens.size()];
     int i = 0;
     boolean flag = true;
-    int prev = -1;
     int maxDocId = -1;
     for(String term:query._tokens) {
       docids[i] = next(term,docid);
       if(docids[i] == -1) {
         return null;
       }
-      if(prev != -1) {
-        if(docids[prev] != docids[i]) {
+      if(i != 0) {
+        if(docids[i-1] != docids[i]) {
           flag = false;
         }
       }
       if(maxDocId < docids[i]) {
         maxDocId = docids[i];
       }
-      prev++;
       i++;
     }
     if(flag) {
@@ -185,10 +223,14 @@ public class IndexerInvertedDoconly extends Indexer {
     }
     return high;
   }
+  
+  public int getNumDocuments() {
+    return _documents.size();
+  }
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    return 0;
+    return index.get(term).size();
   }
 
   @Override
