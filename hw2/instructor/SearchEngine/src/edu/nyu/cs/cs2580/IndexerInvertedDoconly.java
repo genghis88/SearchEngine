@@ -7,10 +7,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Vector;
 import java.util.Scanner;
 import java.util.List;
+import java.util.Set;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -23,7 +25,7 @@ import org.jsoup.select.Elements;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedDoconly extends Indexer {
+public class IndexerInvertedDoconly extends Indexer implements Serializable {
   
   private Vector<Document> _documents = new Vector<Document>();
   private HashMap<String,Vector<Integer>> index = new HashMap<String,Vector<Integer>>();
@@ -127,7 +129,7 @@ public class IndexerInvertedDoconly extends Indexer {
   }
   
   private void updateIndex(HashMap<String, Integer> tokens ,int did) {
-    List<String> wordsInDoc = (List<String>)tokens.keySet();
+    Set<String> wordsInDoc = tokens.keySet();
     for(String word:wordsInDoc) {
       //int count = tokens.get(tokenKey);
       if(index.containsKey(word)) {
@@ -147,6 +149,7 @@ public class IndexerInvertedDoconly extends Indexer {
     String indexFile = _options._indexPrefix + "/corpus.idx";
     System.out.println("Load index from: " + indexFile);
 
+    try{
     ObjectInputStream reader =
         new ObjectInputStream(new FileInputStream(indexFile));
     IndexerInvertedDoconly loaded = (IndexerInvertedDoconly) reader.readObject();
@@ -155,10 +158,16 @@ public class IndexerInvertedDoconly extends Indexer {
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this.index = loaded.index;
+    this._options = loaded._options;
+    this._totalTermFrequency = loaded._totalTermFrequency;
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
         "with " + Long.toString(_totalTermFrequency) + " terms!");
+    }
+    catch(IOException ioe) {
+      ioe.printStackTrace();
+    }
   }
 
   @Override
@@ -193,14 +202,15 @@ public class IndexerInvertedDoconly extends Indexer {
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      _documents.get(docids[0]);
+      Document doc = _documents.get(docids[0]);
+      return doc;
     }
     return nextDoc(query, maxDocId);
   }
   
   private int next(String term,int docid) {
     Vector<Integer> postingList = index.get(term);
-    if(postingList == null || postingList.size() == 0 || postingList.size() <= docid) {
+    if(postingList == null || postingList.size() == 0 || postingList.get(postingList.size()-1) <= docid) {
       return -1;
     }
     if(postingList.get(0) > docid) {
@@ -212,7 +222,7 @@ public class IndexerInvertedDoconly extends Indexer {
   private int binarySearch(String term, int low, int high, int current) {
     Vector<Integer> postingList = index.get(term);
     int mid = 0;
-    while(high - low > 0) {
+    while(high - low > 1) {
       mid = (low + high) / 2;
       if(postingList.get(mid) <= current) {
         low = mid;
@@ -223,16 +233,16 @@ public class IndexerInvertedDoconly extends Indexer {
     }
     return high;
   }
-  
-  public int getNumDocuments() {
-    return _documents.size();
-  }
 
   @Override
   public int corpusDocFrequencyByTerm(String term) {
     return index.get(term).size();
   }
-
+  
+  public int corpusTermFrequency() {
+    return index.keySet().size();
+  }
+  
   @Override
   public int corpusTermFrequency(String term) {
     return 0;

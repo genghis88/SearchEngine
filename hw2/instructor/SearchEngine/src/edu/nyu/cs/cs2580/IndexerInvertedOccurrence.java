@@ -102,15 +102,17 @@ public class IndexerInvertedOccurrence extends Indexer {
     List<String> wordsInDoc = (List<String>)tokens.keySet();
     for(String word:wordsInDoc) {
       for(int a:tokens.get(word)) {
-        index.add(a);
+        List<Integer> postingList = new Vector<Integer>();
+        postingList.add(did);
+        index.put(word, postingList);
       }
       if(index.containsKey(word)) {
         index.get(word).add(did);
       }
       else {
-        Vector<Integer> postingList = new Vector<Integer>();
+        List<Integer> postingList = new Vector<Integer>();
         postingList.add(did);
-        index.put(word, postingList);        
+        index.put(word, postingList);
       }
     }
     return;
@@ -184,7 +186,7 @@ public class IndexerInvertedOccurrence extends Indexer {
   }
   
   private int binarySearch(String term, int low, int high, int current) {
-    Vector<Integer> postingList = index.get(term);
+    List<Integer> postingList = index.get(term);
     int mid = 0;
     while(high - low > 0) {
       mid = (low + high) / 2;
@@ -197,12 +199,16 @@ public class IndexerInvertedOccurrence extends Indexer {
     }
     return high;
   }
-
+  
   @Override
   public int corpusDocFrequencyByTerm(String term) {
     return 0;
   }
 
+  public int corpusTermFrequency() {
+    return index.keySet().size();
+  }
+  
   @Override
   public int corpusTermFrequency(String term) {
     return 0;
