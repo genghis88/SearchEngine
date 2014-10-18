@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.Set;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -83,7 +84,11 @@ public class IndexerInvertedOccurrence extends Indexer {
       String word = s.next();
       if(tokens.containsKey(word)) {
         List<Integer> listOfCountAndPositions = tokens.get(word);
-        listOfCountAndPositions.set(0, listOfCountAndPositions.get(0)+1);
+        listOfCountAndPositions.set(0,listOfCountAndPositions.get(0)+1);
+        //add delta for compression
+        //for occurrence we don't need to use this
+        //listOfCountAndPositions.add(
+        //    wordcount - listOfCountAndPositions.get(listOfCountAndPositions.size()-1));
         listOfCountAndPositions.add(wordcount);
         tokens.put(word, listOfCountAndPositions);
       }
@@ -99,18 +104,9 @@ public class IndexerInvertedOccurrence extends Indexer {
   }
   
   private void updateIndex(HashMap<String,List<Integer>> tokens, int did) {
-    List<String> wordsInDoc = (List<String>)tokens.keySet();
-    for(String word:wordsInDoc) {
+    for(String word:tokens.keySet()) {
+      List<Integer> postingList = tokens.get(word);
       for(int a:tokens.get(word)) {
-        List<Integer> postingList = new Vector<Integer>();
-        postingList.add(did);
-        index.put(word, postingList);
-      }
-      if(index.containsKey(word)) {
-        index.get(word).add(did);
-      }
-      else {
-        List<Integer> postingList = new Vector<Integer>();
         postingList.add(did);
         index.put(word, postingList);
       }
