@@ -1,0 +1,97 @@
+package edu.nyu.cs.cs2580;
+
+import java.util.List;
+import java.util.HashMap;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.Vector;
+
+public class TFIDF {
+	
+	public static HashMap<String, Double> CalculateDocumentVector(Document doc)
+	{
+		HashMap<String, Double> vector = new HashMap<String, Double>();
+		HashMap<String, Integer> counts = new HashMap<String, Integer>();
+		Vector<String> bv = doc.get_body_vector();
+		//Vector<String> tv = doc.get_title_vector();
+		int N = Document.termFrequency();
+		//double total_terms = tv.size() + bv.size();
+		//double incr = 1.0/total_terms;
+		for(String term : bv)
+		{
+			if(counts.containsKey(term))
+			{
+				counts.put(term, counts.get(term) + 1);
+			}
+			else
+			{
+				counts.put(term, 1);
+			}
+		}
+	
+		/*for(String term : tv)
+		{
+			if(counts.containsKey(term))
+			{
+				counts.put(term, counts.get(term) + 1);
+			}
+			else
+			{
+				counts.put(term, 1);
+			}
+		}*/
+		
+		double denominator = 0;
+		
+		Set<String> keys = counts.keySet();
+	
+		for(String key : keys)
+		{
+			int nk = Document.termFrequency(key);
+			double weight = (Math.log((double)counts.get(key)) + 1.0)*Math.log((N*1.0)/nk);
+			denominator += weight*weight;
+			vector.put(key, weight);
+		}
+		
+		denominator = Math.sqrt(denominator);
+		for(String key : keys)
+		{
+			vector.put(key, vector.get(key)/denominator);
+		}
+		return vector;		
+	}
+	
+	public static HashMap<String, Double> CalculateQueryVector(String query)
+	{
+		Scanner s = new Scanner(query);
+	 
+		HashMap <String, Integer> counts = new HashMap<String, Integer>();
+	    while (s.hasNext()){
+	      String term = s.next();
+	      if(counts.containsKey(term))
+	      {
+	    	  counts.put(term, counts.get(term)+1);
+	      }
+	      else
+	    	  counts.put(term, 1);
+	    }
+	    s.close();
+		HashMap<String, Double> vector = new HashMap<String, Double>();
+		Set<String> keys = counts.keySet();
+		double denominator = 0;
+		int N = Document.termFrequency();
+		for(String key : keys)
+		{
+			int nk = Document.termFrequency(key);
+			double weight = (Math.log((double)counts.get(key)) + 1.0)*Math.log((N*1.0)/nk);
+			denominator += weight*weight;
+			vector.put(key, weight);
+		}
+		denominator = Math.sqrt(denominator);
+		for(String key : keys)
+		{
+			vector.put(key, vector.get(key)/denominator);
+		}
+		return vector;
+	}
+}
