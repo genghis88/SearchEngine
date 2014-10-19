@@ -1,6 +1,7 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -14,6 +15,11 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.Set;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import edu.nyu.cs.cs2580.SkipPointer.*;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -35,9 +41,46 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
     skipPointerMap = new HashMap<String,SkipPointer>();
   }
+  
+  public void test() throws Exception {
+    String corpusDirectoryString = _options._corpusPrefix + "/wiki";
+    System.out.println("Construct index from: " + corpusDirectoryString);
+    final File corpusDirectory = new File(corpusDirectoryString);
+    int x = 3;
+    for (final File fileEntry : corpusDirectory.listFiles()) {
+      if (!fileEntry.isDirectory()) {
+        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
+
+        Element head = doc.select("h1[id=firstHeading]").first();
+        System.out.println(head.text().trim());
+        Elements content_text = doc.select("div[id=mw-content-text]");
+        for (Element elem : content_text) {
+          Elements paras = elem.getElementsByTag("p");
+          Elements h2s = elem.getElementsByTag("h2");
+
+          for (Element h2 : h2s) {
+            System.out.println(h2.getElementsByClass("mw-headline").first());
+          }
+          for (Element para : paras) {
+            System.out.println(para.text().trim());
+          }
+        }
+
+      }
+      x--;
+      if (x == 0)
+        break;
+    }
+  }
 
   @Override
   public void constructIndex() throws IOException {
+    /*try {
+      test();
+    }
+    catch(Exception e) {
+      e.printStackTrace();
+    }*/
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
     HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
@@ -245,7 +288,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
-    System.out.println("next document");
     List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
     for(String term:query._tokens) {
       postingLists.add(index.get(term));
