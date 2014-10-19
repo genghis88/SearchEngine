@@ -43,7 +43,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
-        processDocument(line,posInPostingList);
+        processDocument(line,posInPostingList,skipNumberList);
       }
     } finally {
       reader.close();
@@ -60,7 +60,9 @@ public class IndexerInvertedOccurrence extends Indexer {
     writer.close();
   }
   
-  private void processDocument(String content,HashMap<String,Integer> posInPostingList,HashMap<String,Integer> skipNumberList) {
+  private void processDocument(
+      String content,HashMap<String,Integer> posInPostingList,
+      HashMap<String,Integer> skipNumberList) {
     Scanner s = new Scanner(content).useDelimiter("\t");
 
     String title = s.next();
@@ -82,7 +84,8 @@ public class IndexerInvertedOccurrence extends Indexer {
     
   }
   
-  private void readTermVector(String content, HashMap<String, List<Integer>> tokens) {
+  private void readTermVector(
+      String content, HashMap<String, List<Integer>> tokens) {
     Scanner s = new Scanner(content);  // Uses white space by default.
     int wordcount = 1;
     while (s.hasNext()) {
@@ -108,7 +111,10 @@ public class IndexerInvertedOccurrence extends Indexer {
     return;
   }
   
-  private void updateIndex(HashMap<String,List<Integer>> tokens, int did,HashMap<String,Integer> posInPostingList,HashMap<String,Integer> skipNumberList) {
+  private void updateIndex(
+      HashMap<String,List<Integer>> tokens, int did,
+      HashMap<String,Integer> posInPostingList,
+      HashMap<String,Integer> skipNumberList) {
     for(String word:tokens.keySet()) {
       if(skipNumberList.containsKey(word)) {
         int lastUpdated = skipNumberList.get(word);
@@ -120,6 +126,9 @@ public class IndexerInvertedOccurrence extends Indexer {
         else {
           skipNumberList.put(word, lastUpdated);
         }
+      }
+      else {
+        skipNumberList.put(word, -1);
       }
       List<Integer> postingList = tokens.get(word);
       List<Integer> indexPostingList = null;
