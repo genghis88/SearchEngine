@@ -10,6 +10,7 @@ public class TFIDF {
 	
 	public static HashMap<String, Double> CalculateDocumentVector(Document doc, String query, Indexer indexer)
 	{
+	  
 		HashMap<String, Double> vector = new HashMap<String, Double>();
 		HashMap<String, Integer> counts = new HashMap<String, Integer>();
 		Vector<String> bv = new Vector<String>();
@@ -39,6 +40,7 @@ public class TFIDF {
 		}
 		
 		denominator = Math.sqrt(denominator);
+		//System.out.println(denominator);
 		for(String key : keys)
 		{
 			vector.put(key, vector.get(key)/denominator);

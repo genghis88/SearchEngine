@@ -32,7 +32,6 @@ public class CosineRanker extends Ranker
         HashMap<String, Double> dv = TFIDF.CalculateDocumentVector(doc, query._query, myindexer);
         Set<String> A = qv.keySet();
         Set<String> B = dv.keySet();
-        
         Set<String> keys = qv.size() < dv.size() ? A : B;
         
         double dena = 0.0;

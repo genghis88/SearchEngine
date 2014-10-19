@@ -1,10 +1,11 @@
 package edu.nyu.cs.cs2580.SkipPointer;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class SkipPointer {
+public class SkipPointer implements Serializable {
 	
-	public class Pair
+	public class Pair implements Serializable
 	{
 		private int docid;
 		private long pos;

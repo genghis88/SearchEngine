@@ -237,4 +237,10 @@ class IndexerFullScan extends Indexer implements Serializable {
     return retval;
   }
 
+  @Override
+  public Document nextDocument(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }

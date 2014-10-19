@@ -257,4 +257,10 @@ public class IndexerInvertedDoconly extends Indexer implements Serializable {
   public int documentTermFrequence(String term, int docid) {
     return 0;
   }
+
+  @Override
+  public Document nextDocument(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

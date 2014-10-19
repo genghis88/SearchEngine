@@ -52,4 +52,10 @@ public class IndexerInvertedCompressed extends Indexer {
   public int documentTermFrequency(String term, String url) {
     return 0;
   }
+
+  @Override
+  public Document nextDocument(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

@@ -62,7 +62,7 @@ public abstract class Indexer {
    */
   public abstract Document nextDoc(Query query, int docid);
   
-  public Document nextDocument(Query query, int docid) {return new Document(0);}
+  public abstract Document nextDocument(Query query, int docid);
 
   // APIs for index construction and loading.
 

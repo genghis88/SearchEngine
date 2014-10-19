@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -20,12 +21,13 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 /**
  * @CS2580: Implement this class for HW2.
  */
-public class IndexerInvertedOccurrence extends Indexer {
+public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
   private HashMap<String,SkipPointer> skipPointerMap;
   private int totalwords = 0;
+  private long totalWordsInCorpus = 0;
   private int skipSteps = 5;
 
   public IndexerInvertedOccurrence(Options options) {
@@ -87,6 +89,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     doc.setNumViews(numViews);
     doc._numwords = totalwords;
     _documents.add(doc);
+    totalWordsInCorpus += totalwords;
     totalwords=0;
     ++_numDocs;
 
@@ -177,6 +180,12 @@ public class IndexerInvertedOccurrence extends Indexer {
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
     this.index = loaded.index;
+    this._totalTermFrequency = loaded._totalTermFrequency;
+    this._options = loaded._options;
+    this.skipPointerMap = loaded.skipPointerMap;
+    this.totalwords = loaded.totalwords;
+    this.skipSteps = loaded.skipSteps;
+    this.totalWordsInCorpus = loaded.totalWordsInCorpus;
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
@@ -215,8 +224,16 @@ public class IndexerInvertedOccurrence extends Indexer {
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      DocumentIndexed d = _documents.get(docids[0]);
+      DocumentIndexed d1 = _documents.get(docids[0]);
+     
+      DocumentIndexed d = new DocumentIndexed(d1._docid);
+      d.setTitle(d1.getTitle());
+      d.setUrl(d1.getTitle());
+      d.setPageRank(d1.getPageRank());
+      d.setNumViews(d1.getNumViews());
       d.setDocumentDetails(getDocumentDetails(query,docid));
+      d._normfactor = d1._normfactor;
+      d._numwords = d1._numwords;
       return d;
     }
     return nextDoc(query, maxDocId-1);
@@ -228,6 +245,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
+    System.out.println("next document");
     List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
     for(String term:query._tokens) {
       postingLists.add(index.get(term));
@@ -249,8 +267,15 @@ public class IndexerInvertedOccurrence extends Indexer {
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      DocumentIndexed d = (DocumentIndexed) _documents.get(postingLists.get(0).get(docIdPositions[0]));
+      DocumentIndexed d1 = (DocumentIndexed) _documents.get(postingLists.get(0).get(docIdPositions[0]));
+      DocumentIndexed d = new DocumentIndexed(d1._docid);
+      d.setTitle(d1.getTitle());
+      d.setUrl(d1.getTitle());
+      d.setPageRank(d1.getPageRank());
+      d.setNumViews(d1.getNumViews());
       d.setDocumentDetails(getDocumentDetails(query,docIdPositions));
+      d._normfactor = d1._normfactor;
+      d._numwords = d1._numwords;
       return d;
     }
     return nextDocument(query, maxDocId-1);
@@ -304,13 +329,17 @@ public class IndexerInvertedOccurrence extends Indexer {
       if(postingList == null) {
         return -1;
       }
-      int pos = (int) skipPointerMap.get(term).search(docid);
+      int pos = 0;//(int) skipPointerMap.get(term).search(docid);
       if(postingList.get(pos) > docid) {
         return pos;
       }
       while(((pos = getNextDocPos(postingList, pos)) != -1) 
+          && pos < postingList.size()
           && (postingList.get(pos) <= docid)) {
         ;
+      }
+      if(pos == postingList.size()) {
+        return -1;
       }
       return pos;
     }
@@ -351,7 +380,7 @@ public class IndexerInvertedOccurrence extends Indexer {
       return 0;
     }
     int pos = 0;
-    int count = 1;
+    int count = 0;
     while((pos = getNextDocPos(postingList, pos)) != -1) {
       count += 1;
     }
@@ -385,6 +414,9 @@ public class IndexerInvertedOccurrence extends Indexer {
   public int documentTermFrequency(String term,int docid) {
     List<Integer> postingList = index.get(term);
     int pos = 0;
+    if(postingList.get(pos) == docid) {
+      return postingList.get(pos+1);
+    }
     while(((pos = getNextDocPos(postingList, pos)) != -1) 
         && (postingList.get(pos) <= docid)) {
       if(postingList.get(pos) == docid) {
