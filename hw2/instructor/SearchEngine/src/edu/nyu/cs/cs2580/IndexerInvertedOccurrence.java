@@ -283,25 +283,31 @@ public class IndexerInvertedOccurrence extends Indexer {
   }
   
   private int nextPos(String term,int docid) {
-    List<Integer> postingList = index.get(term);
-    if(postingList == null) {
-      return -1;
-    }
-    int pos = 0;
-    if(postingList.get(pos) > docid) {
-      return pos;
-    }
-    while(((pos = getNextDocPos(postingList, pos)) != -1) 
-        && (postingList.get(pos) <= docid)) {
-      if(postingList.get(pos) == docid) {
-        return getNextDocPos(postingList, pos);
-      }
-    }
-    if(pos != -1) {
-      return pos;
+    String [] allTerms = term.split(" ");
+    if(allTerms.length > 1) {
+      
     }
     else {
-      return -1;
+      List<Integer> postingList = index.get(term);
+      if(postingList == null) {
+        return -1;
+      }
+      int pos = 0;
+      if(postingList.get(pos) > docid) {
+        return pos;
+      }
+      while(((pos = getNextDocPos(postingList, pos)) != -1) 
+          && (postingList.get(pos) <= docid)) {
+        if(postingList.get(pos) == docid) {
+          return getNextDocPos(postingList, pos);
+        }
+      }
+      if(pos != -1) {
+        return pos;
+      }
+      else {
+        return -1;
+      }
     }
   }
   
@@ -368,6 +374,18 @@ public class IndexerInvertedOccurrence extends Indexer {
   @Override
   public int documentTermFrequency(String term, String url) {
     SearchEngine.Check(false, "Not implemented!");
+    return 0;
+  }
+  
+  public int documentTermFrequency(String term,int docid) {
+    List<Integer> postingList = index.get(term);
+    int pos = 0;
+    while(((pos = getNextDocPos(postingList, pos)) != -1) 
+        && (postingList.get(pos) <= docid)) {
+      if(postingList.get(pos) == docid) {
+        return postingList.get(pos+1);
+      }
+    }
     return 0;
   }
 }
