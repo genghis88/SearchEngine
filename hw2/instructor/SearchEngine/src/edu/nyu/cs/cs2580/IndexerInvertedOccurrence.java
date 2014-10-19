@@ -37,6 +37,7 @@ public class IndexerInvertedOccurrence extends Indexer {
   public void constructIndex() throws IOException {
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
+    HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
     HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
     BufferedReader reader = new BufferedReader(new FileReader(corpusFile));
     try {
@@ -59,7 +60,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     writer.close();
   }
   
-  private void processDocument(String content,HashMap<String,Integer> posInPostingList) {
+  private void processDocument(String content,HashMap<String,Integer> posInPostingList,HashMap<String,Integer> skipNumberList) {
     Scanner s = new Scanner(content).useDelimiter("\t");
 
     String title = s.next();
@@ -67,7 +68,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     readTermVector(title, tokens);
     int docid = _documents.size();
     readTermVector(s.next(),tokens);
-    updateIndex(tokens,docid,posInPostingList);   
+    updateIndex(tokens,docid,posInPostingList,skipNumberList);   
 
     int numViews = Integer.parseInt(s.next());
     s.close();
@@ -107,24 +108,34 @@ public class IndexerInvertedOccurrence extends Indexer {
     return;
   }
   
-  private void updateIndex(HashMap<String,List<Integer>> tokens, int did,HashMap<String,Integer> posInPostingList) {
+  private void updateIndex(HashMap<String,List<Integer>> tokens, int did,HashMap<String,Integer> posInPostingList,HashMap<String,Integer> skipNumberList) {
     for(String word:tokens.keySet()) {
-      if(posInPostingList.containsKey(word)) {
-        int lastUpdated = posInPostingList.get(word);
+      if(skipNumberList.containsKey(word)) {
+        int lastUpdated = skipNumberList.get(word);
         lastUpdated++;
         if(lastUpdated == 5) {
-          posInPostingList.put(word, 0);
-          skipPointer.addPointer(did, pos);
+          skipNumberList.put(word, 0);
+          skipPointer.addPointer(did, posInPostingList.get(word));
         }
         else {
-          posInPostingList.put(word, lastUpdated);
+          skipNumberList.put(word, lastUpdated);
         }
       }
       List<Integer> postingList = tokens.get(word);
-      for(int a:tokens.get(word)) {
-        postingList.add(did,0);
-        index.put(word, postingList);
+      postingList.add(did,0);
+      List<Integer> indexPostingList = null;
+      if(index.containsKey(word)) {
+        indexPostingList = index.get(word);
       }
+      else {
+        indexPostingList = new ArrayList<Integer>();
+      }
+      skipNumberList.put(word, indexPostingList.size());
+      indexPostingList.add(did);
+      for(int a:postingList) {
+        indexPostingList.add(a);
+      }
+      index.put(word,indexPostingList);
     }
     return;
   }
