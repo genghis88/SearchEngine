@@ -37,7 +37,7 @@ public class SkipPointer {
 		pairlist.add(p);
 	}
 	
-	private long search(int docid)
+	public long search(int docid)
 	{
 		int low = 0;
 		int high = pairlist.size()-1;
