@@ -24,14 +24,14 @@ public class IndexerInvertedOccurrence extends Indexer {
   
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
-  private SkipPointer skipPointer;
+  private HashMap<String,SkipPointer> skipPointerMap;
   private int totalwords = 0;
   private int skipSteps = 5;
 
   public IndexerInvertedOccurrence(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
-    skipPointer = new SkipPointer();
+    skipPointerMap = new HashMap<String,SkipPointer>();
   }
 
   @Override
@@ -130,16 +130,24 @@ public class IndexerInvertedOccurrence extends Indexer {
       if(skipNumberList.containsKey(word)) {
         int lastUpdated = skipNumberList.get(word);
         lastUpdated++;
-        if(lastUpdated == 5) {
+        if(lastUpdated == skipSteps) {
           skipNumberList.put(word, 0);
+          SkipPointer skipPointer = null;
+          if(skipPointerMap.containsKey(word)) {
+            skipPointer = skipPointerMap.get(word);
+          }
+          else {
+            skipPointer = new SkipPointer();
+          }
           skipPointer.addPointer(did, posInPostingList.get(word));
+          skipPointerMap.put(word, skipPointer);
         }
         else {
           skipNumberList.put(word, lastUpdated);
         }
       }
       else {
-        skipNumberList.put(word, -1);
+        skipNumberList.put(word, 0);
       }
       List<Integer> postingList = tokens.get(word);
       List<Integer> indexPostingList = null;
@@ -149,9 +157,9 @@ public class IndexerInvertedOccurrence extends Indexer {
       else {
         indexPostingList = new ArrayList<Integer>();
       }
-      posInPostingList.put(word, indexPostingList.size());
       indexPostingList.add(did);
       indexPostingList.addAll(postingList);
+      posInPostingList.put(word, indexPostingList.size());
       index.put(word,indexPostingList);
     }
     return;
@@ -280,35 +288,32 @@ public class IndexerInvertedOccurrence extends Indexer {
     if(pos >= postingList.size()-1) {
       return -1;
     }
-    return (pos+1+postingList.get(pos+1));
+    return (pos+2+postingList.get(pos+1));
   }
   
+  /*
+   * Returns position of doc id location in the posting list
+   * which is greater than the docid passed
+   */
   private int nextPos(String term,int docid) {
     String [] allTerms = term.split(" ");
     if(allTerms.length > 1) {
-      
+      return 0;
     }
     else {
       List<Integer> postingList = index.get(term);
       if(postingList == null) {
         return -1;
       }
-      int pos = 0;
+      int pos = (int) skipPointer.search(docid);
       if(postingList.get(pos) > docid) {
         return pos;
       }
       while(((pos = getNextDocPos(postingList, pos)) != -1) 
           && (postingList.get(pos) <= docid)) {
-        if(postingList.get(pos) == docid) {
-          return getNextDocPos(postingList, pos);
-        }
+        ;
       }
-      if(pos != -1) {
-        return pos;
-      }
-      else {
-        return -1;
-      }
+      return pos;
     }
   }
   

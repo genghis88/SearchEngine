@@ -51,7 +51,7 @@ public class SkipPointer {
 				if(mid > 0)
 					return pairlist.get(mid - 1).getPos();
 				else
-					return -1;
+					return 0;
 			}
 			else if(p.getDocid() > docid)
 			{
