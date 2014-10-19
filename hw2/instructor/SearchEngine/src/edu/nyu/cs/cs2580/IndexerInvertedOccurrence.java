@@ -122,7 +122,6 @@ public class IndexerInvertedOccurrence extends Indexer {
         }
       }
       List<Integer> postingList = tokens.get(word);
-      postingList.add(did,0);
       List<Integer> indexPostingList = null;
       if(index.containsKey(word)) {
         indexPostingList = index.get(word);
@@ -130,11 +129,9 @@ public class IndexerInvertedOccurrence extends Indexer {
       else {
         indexPostingList = new ArrayList<Integer>();
       }
-      skipNumberList.put(word, indexPostingList.size());
+      posInPostingList.put(word, indexPostingList.size());
       indexPostingList.add(did);
-      for(int a:postingList) {
-        indexPostingList.add(a);
-      }
+      indexPostingList.addAll(postingList);
       index.put(word,indexPostingList);
     }
     return;
