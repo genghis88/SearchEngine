@@ -61,18 +61,14 @@ public class IndexerInvertedOccurrence extends Indexer {
     writer.close();
   }
   
-  private void processDocument(
-      String content,HashMap<String,Integer> posInPostingList,
-      HashMap<String,Integer> skipNumberList) {
+  private void processDocument(String content, HashMap<String,Integer> posInPostingList, HashMap<String,Integer> skipNumberList) 
+  {
     Scanner s = new Scanner(content).useDelimiter("\t");
 
     String title = s.next();
     HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
     double normfactor = 0; 
-    for(String token: tokens.keySet()) {
-      int x = tokens.get(token).get(0);
-      normfactor += x*x;
-    }
+    
     readTermVector(title, tokens);
     int docid = _documents.size();
     readTermVector(s.next(),tokens);
@@ -80,7 +76,11 @@ public class IndexerInvertedOccurrence extends Indexer {
 
     int numViews = Integer.parseInt(s.next());
     s.close();
-
+    
+    for(String token: tokens.keySet()) {
+        int x = tokens.get(token).get(0);
+        normfactor += x*x;
+    }
     DocumentIndexed doc = new DocumentIndexed(_documents.size());
     doc.setTitle(title);
     doc._normfactor = Math.sqrt(normfactor);
