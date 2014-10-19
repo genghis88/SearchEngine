@@ -41,12 +41,9 @@ public class CosineRanker extends Ranker
           dena+= qv.get(a)*qv.get(a);
         }
         double denb = 0.0;
-        for(String b : B)
-        {
-          denb += dv.get(b)*dv.get(b);
-        }
+        denb = doc._normfactor;
         
-        double denominator = Math.sqrt(dena * denb);
+        double denominator = Math.sqrt(dena)* denb;
         
         // Score the document. Here we have provided a very simple ranking model,
         // where a document is scored 1.0 if it gets hit by at least one query term.

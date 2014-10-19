@@ -25,6 +25,7 @@ public class IndexerInvertedOccurrence extends Indexer {
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
   private SkipPointer skipPointer;
+  private int totalwords = 0;
   private int skipSteps = 5;
 
   public IndexerInvertedOccurrence(Options options) {
@@ -67,6 +68,11 @@ public class IndexerInvertedOccurrence extends Indexer {
 
     String title = s.next();
     HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
+    double normfactor = 0; 
+    for(String token: tokens.keySet()) {
+      int x = tokens.get(token).get(0);
+      normfactor += x*x;
+    }
     readTermVector(title, tokens);
     int docid = _documents.size();
     readTermVector(s.next(),tokens);
@@ -77,8 +83,11 @@ public class IndexerInvertedOccurrence extends Indexer {
 
     DocumentIndexed doc = new DocumentIndexed(_documents.size());
     doc.setTitle(title);
+    doc._normfactor = Math.sqrt(normfactor);
     doc.setNumViews(numViews);
+    doc._numwords = totalwords;
     _documents.add(doc);
+    totalwords=0;
     ++_numDocs;
 
     
@@ -108,6 +117,7 @@ public class IndexerInvertedOccurrence extends Indexer {
       }
       wordcount++;
     }
+    totalwords += wordcount-1;
     return;
   }
   
@@ -235,7 +245,7 @@ public class IndexerInvertedOccurrence extends Indexer {
       d.setDocumentDetails(getDocumentDetails(query,docIdPositions));
       return d;
     }
-    return nextDoc(query, maxDocId-1);
+    return nextDocument(query, maxDocId-1);
   }
   
   private List<Integer> getDocumentDetails(Query query, int docid) {
