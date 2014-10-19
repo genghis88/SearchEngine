@@ -304,7 +304,7 @@ public class IndexerInvertedOccurrence extends Indexer {
       if(postingList == null) {
         return -1;
       }
-      int pos = (int) skipPointer.search(docid);
+      int pos = (int) skipPointerMap.get(term).search(docid);
       if(postingList.get(pos) > docid) {
         return pos;
       }
