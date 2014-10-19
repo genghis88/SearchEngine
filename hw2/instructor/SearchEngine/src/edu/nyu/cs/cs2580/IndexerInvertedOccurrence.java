@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.Set;
+import edu.nyu.cs.cs2580.SkipPointer.*;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
@@ -23,22 +24,25 @@ public class IndexerInvertedOccurrence extends Indexer {
   
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
+  private SkipPointer skipPointer;
+  private int skipSteps = 5;
 
   public IndexerInvertedOccurrence(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
+    skipPointer = new SkipPointer();
   }
 
   @Override
   public void constructIndex() throws IOException {
     String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
-
+    HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
     BufferedReader reader = new BufferedReader(new FileReader(corpusFile));
     try {
       String line = null;
       while ((line = reader.readLine()) != null) {
-        processDocument(line);
+        processDocument(line,posInPostingList);
       }
     } finally {
       reader.close();
@@ -55,7 +59,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     writer.close();
   }
   
-  private void processDocument(String content) {
+  private void processDocument(String content,HashMap<String,Integer> posInPostingList) {
     Scanner s = new Scanner(content).useDelimiter("\t");
 
     String title = s.next();
@@ -63,7 +67,7 @@ public class IndexerInvertedOccurrence extends Indexer {
     readTermVector(title, tokens);
     int docid = _documents.size();
     readTermVector(s.next(),tokens);
-    updateIndex(tokens,docid);   
+    updateIndex(tokens,docid,posInPostingList);   
 
     int numViews = Integer.parseInt(s.next());
     s.close();
@@ -103,11 +107,22 @@ public class IndexerInvertedOccurrence extends Indexer {
     return;
   }
   
-  private void updateIndex(HashMap<String,List<Integer>> tokens, int did) {
+  private void updateIndex(HashMap<String,List<Integer>> tokens, int did,HashMap<String,Integer> posInPostingList) {
     for(String word:tokens.keySet()) {
+      if(posInPostingList.containsKey(word)) {
+        int lastUpdated = posInPostingList.get(word);
+        lastUpdated++;
+        if(lastUpdated == 5) {
+          posInPostingList.put(word, 0);
+          skipPointer.addPointer(did, pos);
+        }
+        else {
+          posInPostingList.put(word, lastUpdated);
+        }
+      }
       List<Integer> postingList = tokens.get(word);
       for(int a:tokens.get(word)) {
-        postingList.add(did);
+        postingList.add(did,0);
         index.put(word, postingList);
       }
     }

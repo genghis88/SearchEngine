@@ -29,7 +29,7 @@ public class SkipPointer {
 		pairlist = new ArrayList<SkipPointer.Pair>();
 	}
 	
-	void addPointer(int docid, int pos)
+	public void addPointer(int docid, int pos)
 	{
 		Pair p = new Pair();
 		p.setDocid(docid);
@@ -37,7 +37,7 @@ public class SkipPointer {
 		pairlist.add(p);
 	}
 	
-	long search(int docid)
+	private long search(int docid)
 	{
 		int low = 0;
 		int high = pairlist.size()-1;
