@@ -1,0 +1,18 @@
+package edu.nyu.cs.cs2580;
+
+import java.util.Collections;
+
+import edu.nyu.cs.cs2580.QueryHandler.CgiArguments;
+import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+public class PhraseRanker extends Ranker
+{
+  Indexer myindexer;
+  protected PhraseRanker(Options options, CgiArguments arguments,
+      Indexer indexer) {
+    super(options, arguments, indexer);
+    myindexer = indexer;
+    System.out.println("Using Ranker: " + this.getClass().getSimpleName());
+  }
+  
+}

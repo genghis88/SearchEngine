@@ -1,0 +1,83 @@
+package edu.nyu.cs.cs2580;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Vector;
+import java.util.Set;
+
+import javax.xml.soap.Detail;
+
+import edu.nyu.cs.cs2580.SkipPointer.*;
+import edu.nyu.cs.cs2580.SearchEngine.Options;
+
+
+public class InvertedIndexerDelta extends Indexer implements Serializable{
+  
+  private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
+  private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
+  private HashMap<String,SkipPointer> skipPointerMap;
+  private int totalwords = 0;
+  private long totalWordsInCorpus = 0;
+  private int skipSteps = 5;
+  
+  public InvertedIndexerDelta(Options options) {
+    super(options);
+    System.out.println("Using Indexer: " + this.getClass().getSimpleName());
+    skipPointerMap = new HashMap<String,SkipPointer>();
+  }
+  
+  @Override
+  public Document getDoc(int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  @Override
+  public Document nextDoc(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  @Override
+  public Document nextDocument(Query query, int docid) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  @Override
+  public void constructIndex() throws IOException {
+    // TODO Auto-generated method stub
+    
+  }
+  @Override
+  public void loadIndex() throws IOException, ClassNotFoundException {
+    // TODO Auto-generated method stub
+    
+  }
+  @Override
+  public int corpusDocFrequencyByTerm(String term) {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+  @Override
+  public int corpusTermFrequency(String term) {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+  @Override
+  public int documentTermFrequency(String term, String url) {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+  
+  
+
+}

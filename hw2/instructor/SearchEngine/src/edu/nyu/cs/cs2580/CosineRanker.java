@@ -24,7 +24,7 @@ public class CosineRanker extends Ranker
       Queue<ScoredDocument> rankQueue = new PriorityQueue<ScoredDocument>();
       Document doc = null;
       int docid = -1;
-      while ((doc = _indexer.nextDoc(query, docid)) != null) {
+      while ((doc = _indexer.nextDocument(query, docid)) != null) {
         HashMap<String, Double> qv = TFIDF.CalculateQueryVector(query._query, myindexer);
 
         // Get the document vector. For hw1, you don't have to worry about the

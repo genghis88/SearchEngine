@@ -9,13 +9,16 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.Set;
-import edu.nyu.cs.cs2580.SkipPointer.*;
 
+import javax.xml.soap.Detail;
+
+import edu.nyu.cs.cs2580.SkipPointer.*;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -70,9 +73,9 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     String title = s.next();
     HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
     double normfactor = 0; 
-    readTermVector(title, tokens);
+    readTermVector(title + " " + s.next(), tokens);
     int docid = _documents.size();
-    readTermVector(s.next(),tokens);
+    //readTermVector(s.next(),tokens);
     updateIndex(tokens,docid,posInPostingList,skipNumberList);   
 
     int numViews = Integer.parseInt(s.next());
@@ -241,7 +244,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   @Override
   public Document nextDocument(Query query, int docid) {
-    int [] docIdPositions = new int[query._tokens.size()];
+    DocumentIndexed [] docs = new DocumentIndexed[query._tokens.size()];
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
@@ -249,31 +252,36 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
     for(String term:query._tokens) {
       postingLists.add(index.get(term));
-      docIdPositions[i] = nextPos(term,docid);
-      if(docIdPositions[i] == -1) {
+      docs[i] = nextPosition(term,docid);
+      if(docs[i] == null) {
         return null;
       }
       if(i != 0) {
-        if(postingLists.get(i-1).get(docIdPositions[i-1]) != 
-            postingLists.get(i).get(docIdPositions[i])) {
+        if(docs[i]._docid != docs[i-1]._docid)
+        {
           flag = false;
         }
       }
-      if(maxDocId < postingLists.get(i).get(docIdPositions[i])) {
-        maxDocId = postingLists.get(i).get(docIdPositions[i]);
+      if(maxDocId < docs[i]._docid) {
+        maxDocId = docs[i]._docid;
       }
       i++;
     }
     if(flag) {
       //this doc contains all the terms!!
       //all the query terms map to the same doc id
-      DocumentIndexed d1 = (DocumentIndexed) _documents.get(postingLists.get(0).get(docIdPositions[0]));
+      DocumentIndexed d1 = (DocumentIndexed) _documents.get(maxDocId);
       DocumentIndexed d = new DocumentIndexed(d1._docid);
       d.setTitle(d1.getTitle());
       d.setUrl(d1.getTitle());
       d.setPageRank(d1.getPageRank());
       d.setNumViews(d1.getNumViews());
-      d.setDocumentDetails(getDocumentDetails(query,docIdPositions));
+      List<Integer> details = new ArrayList<Integer>();
+      for(int j = 0; j < docs.length; j++)
+      {
+        details.addAll(docs[j].getDocumentDetails());
+      }
+      d.setDocumentDetails(details);
       d._normfactor = d1._normfactor;
       d._numwords = d1._numwords;
       return d;
@@ -308,6 +316,21 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     return docDetails;
   }
   
+  private List<List<Integer>> getDocumentDetails(String tokens[], int docpos[]) {
+    List<List<Integer>> docDetails = new ArrayList<List<Integer>>();
+    for(int j = 0 ; j < tokens.length; j++)
+    {
+      List<Integer> postingList = index.get(tokens[j]);
+      int afterNextP = getNextDocPos(postingList, docpos[j]);
+      List<Integer> pl = new ArrayList<Integer>();
+      docDetails.add(pl);
+      for(int i=docpos[j]+2; i<afterNextP; i++) {
+        pl.add(postingList.get(i));
+      }
+    }
+    return docDetails;
+  }
+  
   private int getNextDocPos(List<Integer> postingList,int pos) {
     if(pos >= postingList.size()-1) {
       return -1;
@@ -315,13 +338,92 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     return (pos+2+postingList.get(pos+1));
   }
   
+  public DocumentIndexed nextPhrasePos(String term, int docid)
+  {
+    boolean flag = true;
+    
+    String terms[] = term.split(" ");
+    while(flag)
+    {
+      boolean flag2 = true;
+      int max = -1;
+      int docidpos[] = new int[terms.length];
+      int docids[] = new int[terms.length];
+      for(int i = 0 ; i < terms.length; i++)
+      {
+        String t = terms[i];
+        
+        docidpos[i] = nextPos(t, docid);
+        if(docidpos[i] == -1)
+          return null;
+        
+        docids[i] = index.get(t).get(docidpos[i]);
+        if(i != 0)
+        {
+          if(docids[i] != docids[i-1])
+          {
+            flag2 = false;
+          }
+        }
+        if(max < docids[i])
+        {
+          max = docids[i];
+        }
+      }
+      if(flag2)
+      {
+        List<List<Integer>> l = getDocumentDetails(terms, docidpos);
+        int pharasecount = 0;
+        List<Integer> phrasedetails = new LinkedList<Integer>();
+        //phrasedetails.add(0);
+        List<Integer> firstterm = l.get(0);
+        for(int i = 0; i < firstterm.size(); i++)
+        {
+          int firstpos = firstterm.get(i);
+          boolean flag3 = true;
+          for(int j = 1; j < l.size(); j++)
+          {
+            if(!l.get(j).contains(firstpos + j))
+            {
+              flag3 = false;
+              break;
+            }
+          }
+          if(flag3)
+          {
+            phrasedetails.add(firstpos);
+            pharasecount++;
+          }
+        }
+        if(pharasecount > 0)
+        {
+          flag = false;
+          phrasedetails.add(0, pharasecount);
+          DocumentIndexed d = new DocumentIndexed(max);
+          d.setDocumentDetails(phrasedetails);
+          return d;
+        }
+        else
+        {
+          docid = max;
+        }
+      }
+      else
+      {
+        docid = max - 1;
+      }
+      
+    }
+    return null;
+  }
+  
   /*
    * Returns position of doc id location in the posting list
    * which is greater than the docid passed
    */
   private int nextPos(String term,int docid) {
-    String [] allTerms = term.split(" ");
-    if(allTerms.length > 1) {
+    
+    if(term.contains(" ")) {
       return 0;
     }
     else {
@@ -342,6 +444,48 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         return -1;
       }
       return pos;
+    }
+  }
+  
+  private DocumentIndexed nextPosition(String term,int docid) {
+    
+    if(term.contains(" ")) {
+      return nextPhrasePos(term, docid);
+    }
+    else {
+      List<Integer> postingList = index.get(term);
+      if(postingList == null) {
+        return null;
+      }
+      int pos = 0;//(int) skipPointerMap.get(term).search(docid);
+      if(postingList.get(pos) > docid) {
+        DocumentIndexed d = new DocumentIndexed(postingList.get(pos));
+        Document d1 = _documents.get(d._docid);
+        List<Integer> docDetails = new ArrayList<Integer>();
+        int afterNextP = getNextDocPos(postingList, pos);
+        for(int i = pos+1;i<afterNextP;i++) {
+          docDetails.add(postingList.get(i));
+        }
+        d.setDocumentDetails(docDetails);
+        return d;
+      }
+      while(((pos = getNextDocPos(postingList, pos)) != -1) 
+          && pos < postingList.size()
+          && (postingList.get(pos) <= docid)) {
+        ;
+      }
+      if(pos == postingList.size()) {
+        return null;
+      }
+      DocumentIndexed d = new DocumentIndexed(postingList.get(pos));
+      Document d1 = _documents.get(d._docid);
+      List<Integer> docDetails = new ArrayList<Integer>();
+      int afterNextP = getNextDocPos(postingList, pos);
+      for(int i = pos+1;i<afterNextP;i++) {
+        docDetails.add(postingList.get(i));
+      }
+      d.setDocumentDetails(docDetails);
+      return d;
     }
   }
   
@@ -372,6 +516,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     }
     return high;
   }
+  
+  
   
   @Override
   public int corpusDocFrequencyByTerm(String term) {
