@@ -1,6 +1,5 @@
 package edu.nyu.cs.cs2580;
 
-import java.util.List;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Set;

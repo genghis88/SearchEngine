@@ -15,23 +15,23 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
-import java.util.Set;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import edu.nyu.cs.cs2580.SkipPointer.*;
 
-import javax.xml.soap.Detail;
-
-import edu.nyu.cs.cs2580.SkipPointer.*;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
  * @CS2580: Implement this class for HW2.
  */
 public class IndexerInvertedOccurrence extends Indexer implements Serializable {
+  
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 7649255732151541345L;
   
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
@@ -102,7 +102,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
         "Indexed " + Integer.toString(_numDocs) + " docs with " +
         Long.toString(_totalTermFrequency) + " terms.");
 
-    String indexFile = _options._indexPrefix + "/corpus.idx";
+    String indexFile = _options._indexPrefix + "/corpus_occurrences.idx";
     System.out.println("Store index to: " + indexFile);
     ObjectOutputStream writer =
         new ObjectOutputStream(new FileOutputStream(indexFile));
@@ -216,7 +216,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
-    String indexFile = _options._indexPrefix + "/corpus.idx";
+    String indexFile = _options._indexPrefix + "/corpus_occurrences.idx";
     System.out.println("Load index from: " + indexFile);
 
     ObjectInputStream reader =

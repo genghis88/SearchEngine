@@ -11,7 +11,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Vector;
 import java.util.Scanner;
-import java.util.List;
 import java.util.Set;
 
 import edu.nyu.cs.cs2580.SearchEngine.Options;
@@ -27,6 +26,10 @@ import org.jsoup.select.Elements;
  */
 public class IndexerInvertedDoconly extends Indexer implements Serializable {
   
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 5289795082969249334L;
   private Vector<Document> _documents = new Vector<Document>();
   private HashMap<String,Vector<Integer>> index = new HashMap<String,Vector<Integer>>();
 

@@ -5,9 +5,18 @@ import java.util.ArrayList;
 
 public class SkipPointer implements Serializable {
 	
-	public class Pair implements Serializable
+	/**
+   * 
+   */
+  private static final long serialVersionUID = -4646700548252218847L;
+
+  public class Pair implements Serializable
 	{
-		private int docid;
+		/**
+     * 
+     */
+    private static final long serialVersionUID = -2637103976834923929L;
+    private int docid;
 		private long pos;
 		public int getDocid() {
 			return docid;
@@ -38,7 +47,7 @@ public class SkipPointer implements Serializable {
 		pairlist.add(p);
 	}
 	
-	public long search(int docid)
+	public Pair search(int docid)
 	{
 		int low = 0;
 		int high = pairlist.size()-1;
@@ -50,9 +59,9 @@ public class SkipPointer implements Serializable {
 			if(p.getDocid() == docid)
 			{
 				if(mid > 0)
-					return pairlist.get(mid - 1).getPos();
+					return pairlist.get(mid - 1);
 				else
-					return 0;
+					return null;
 			}
 			else if(p.getDocid() > docid)
 			{
@@ -64,12 +73,12 @@ public class SkipPointer implements Serializable {
 					low = mid + 1;
 				else
 				{
-					return pairlist.get(mid).getPos();
+					return pairlist.get(mid);
 				}
 				
 			}
 		}
 		
-		return pairlist.get(low).getPos();
+		return pairlist.get(low);
 	}
 }
