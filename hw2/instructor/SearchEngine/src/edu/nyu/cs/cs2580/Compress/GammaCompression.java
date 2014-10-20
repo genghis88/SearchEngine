@@ -1,11 +1,18 @@
 package edu.nyu.cs.cs2580.Compress;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
-public class GammaCompression extends Compression{
+public class GammaCompression extends Compression implements Serializable{
 
-	@Override
+	/**
+   * 
+   */
+  private static final long serialVersionUID = 5642441260319969252L;
+
+  @Override
 	public int compressBatch(int[] arg, BitSet b) {
 		// TODO Auto-generated method stub
 		int bitpos = 0;
@@ -24,14 +31,35 @@ public class GammaCompression extends Compression{
 		}
 		return bitpos;
 	}
+	
+	public int compressBatch(int[] arg, BitSet b,int pos) {
+    // TODO Auto-generated method stub
+    int bitpos = pos;
+    for(int i = 0; i < arg.length; i++)
+    {
+      int k = arg[i];
+      int kd = (int)Math.floor((Math.log(k)/log2));
+      int kr = k - (1<<kd);
+      b.set(bitpos, bitpos + kd, true);
+      bitpos += kd;
+      b.set(bitpos, false);
+      bitpos++;
+      BitSet b2 = convert(kr, kd);
+      set(b, b2, bitpos, bitpos + kd);
+      bitpos += kd;
+    }
+    return bitpos;
+  }
 
 	@Override
 	public int compress(int arg, BitSet b, int pos) {
 		// TODO Auto-generated method stub
 		int bitpos = pos;
-		int k = arg;
+		int k = arg+1;
 		int kd = (int)Math.floor((Math.log(k)/log2));
-		int kr = k - (1<<kd);
+		int kr = k - (1<<kd); 
+		if(b == null)
+		  System.out.println(b);
 		b.set(bitpos, bitpos + kd, true);
 		bitpos += kd;
 		b.set(bitpos, false);
@@ -92,9 +120,9 @@ public class GammaCompression extends Compression{
 		if(unary == 0)
 		{
 			if(i < count)
-				return new int[]{1, i};
+				return new int[]{1-1, i};
 			else
-				return new int[]{1, -1};
+				return new int[]{1-1, -1};
 		}
 		
 		else
@@ -108,10 +136,30 @@ public class GammaCompression extends Compression{
 			int ans = ((1 << unary) + val);
 			i += unary;
 			if(i < count)
-				return new int[]{ans, i};
+				return new int[]{ans-1, i};
 			else
-				return new int[]{ans, -1};
+				return new int[]{ans-1, -1};
 		}
 	}
+
+  @Override
+  public int compressBatch(List<Integer> arg, BitSet b,int pos) {
+    // TODO Auto-generated method stub
+    int bitpos = pos;
+    for(int i = 0; i < arg.size(); i++)
+    {
+      int k = arg.get(i)+1;
+      int kd = (int)Math.floor((Math.log(k)/log2));
+      int kr = k - (1<<kd);
+      b.set(bitpos, bitpos + kd, true);
+      bitpos += kd;
+      b.set(bitpos, false);
+      bitpos++;
+      BitSet b2 = convert(kr, kd);
+      set(b, b2, bitpos, bitpos + kd);
+      bitpos += kd;
+    }
+    return bitpos;
+  }
 
 }

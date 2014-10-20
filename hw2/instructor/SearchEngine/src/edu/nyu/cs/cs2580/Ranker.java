@@ -75,7 +75,7 @@ public abstract class Ranker {
         break;
       case PHRASE:
         // Plug in your phrase Ranker
-        break;
+        return new PhraseRanker(options,arguments,indexer);
       case LINEAR:
         // Plug in your linear Ranker
         break;

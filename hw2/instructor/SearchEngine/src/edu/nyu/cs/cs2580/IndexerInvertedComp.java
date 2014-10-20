@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,28 +21,58 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import edu.nyu.cs.cs2580.Compress.Compression;
+import edu.nyu.cs.cs2580.Compress.DeltaCompression;
 import edu.nyu.cs.cs2580.SkipPointer.SkipPointer;
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 
-public class InvertedIndexerDelta extends Indexer implements Serializable{
+public class IndexerInvertedComp extends Indexer implements Serializable{
   
   /**
    * 
    */
-  private static final long serialVersionUID = -9138680839838362811L;
   
+  public class PostingList implements Serializable
+  {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 5510909849643509910L;
+    private int count;
+    //private BitSet bits;
+    private ArrayList<BitSet> sets = new ArrayList<BitSet>();
+    public ArrayList<BitSet> getSets() {
+      return sets;
+    }
+    public void setSets(ArrayList<BitSet> sets) {
+      this.sets = sets;
+    }
+    public PostingList()
+    {
+      count = 0;
+      sets = new ArrayList<BitSet>();
+    }
+    public int getCount() {
+      return count;
+    }
+    public void setCount(int count) {
+      this.count = count;
+    }   
+  }
+  private static final long serialVersionUID = 1L;
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
-  private HashMap<String,List<Integer>> index = new HashMap<String,List<Integer>>();
-  private HashMap<String,SkipPointer> skipPointerMap;
+  private HashMap<String,PostingList> index2 = new HashMap<String,PostingList>();
+  private Compression compression = new DeltaCompression();
+  //private HashMap<String,SkipPointer> skipPointerMap;
   private int totalwords = 0;
   private long totalWordsInCorpus = 0;
   private int skipSteps = 5;
   
-  public InvertedIndexerDelta(Options options) {
+  public IndexerInvertedComp(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
-    skipPointerMap = new HashMap<String,SkipPointer>();
+    //skipPointerMap = new HashMap<String,SkipPointer>();
   }
   
   public void test() throws Exception {
@@ -89,7 +120,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
         "Indexed " + Integer.toString(_numDocs) + " docs with " +
         Long.toString(_totalTermFrequency) + " terms.");
 
-    String indexFile = _options._indexPrefix + "/corpus_wiki_delta.idx";
+    String indexFile = _options._indexPrefix + "/corpus_wiki_comp.idx";
     System.out.println("Store index to: " + indexFile);
     ObjectOutputStream writer =
         new ObjectOutputStream(new FileOutputStream(indexFile));
@@ -100,13 +131,13 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
   
   @Override
   public void constructIndex() throws IOException {
-    try {
+    /*try {
       test();
     }
     catch(Exception e) {
       e.printStackTrace();
-    }
-    /*String corpusFile = _options._corpusPrefix + "/corpus.tsv";
+    }*/
+    String corpusFile = _options._corpusPrefix + "/corpus.tsv";
     System.out.println("Construct index from: " + corpusFile);
     HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
     HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
@@ -114,8 +145,13 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     BufferedReader reader = new BufferedReader(new FileReader(corpusFile));
     try {
       String line = null;
+      try {
       while ((line = reader.readLine()) != null) {
         processDocument(line,posInPostingList,skipNumberList,lastDocInserted);
+      }
+      }
+      catch(Exception e) {
+        e.printStackTrace();
       }
     } finally {
       reader.close();
@@ -124,12 +160,12 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
         "Indexed " + Integer.toString(_numDocs) + " docs with " +
         Long.toString(_totalTermFrequency) + " terms.");
 
-    String indexFile = _options._indexPrefix + "/corpus_delta.idx";
+    String indexFile = _options._indexPrefix + "/corpus_comp.idx";
     System.out.println("Store index to: " + indexFile);
     ObjectOutputStream writer =
         new ObjectOutputStream(new FileOutputStream(indexFile));
     writer.writeObject(this);
-    writer.close();*/
+    writer.close();
   }
   
   private void processDocument(String title,String content, HashMap<String,Integer> posInPostingList, HashMap<String,Integer> skipNumberList) 
@@ -172,6 +208,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
 
     String title = s.next();
     HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
+    
     double normfactor = 0; 
     readTermVector(title + " " + s.next(), tokens);
     int docid = _documents.size();
@@ -218,6 +255,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
         listOfCountAndPositions.add(1);
         listOfCountAndPositions.add(wordcount);
         lastOccurenceofWordinDoc.put(word, wordcount);
+        
         tokens.put(word, listOfCountAndPositions);
       }
       wordcount++;
@@ -231,71 +269,86 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     HashMap<String,Integer> posInPostingList,
     HashMap<String,Integer> skipNumberList,
     HashMap<String,Integer> lastDocInserted) {
+    
+    //HashMap<String, PostingList> tokens2 = new HashMap<String, PostingList>();
+    
     for(String word:tokens.keySet()) {
       
       List<Integer> postingList = tokens.get(word);
-      List<Integer> indexPostingList = null;
-      if(index.containsKey(word)) {
-        indexPostingList = index.get(word);
+      //List<Integer> indexPostingList = null;
+      PostingList p = null;
+      if(index2.containsKey(word)) {
+        p = index2.get(word);
       }
-      else {
-        indexPostingList = new ArrayList<Integer>();
+      else
+      {
+        p = new PostingList();
+        index2.put(word, p);
       }
+      
       int lastDocId = 0;
       if(lastDocInserted.containsKey(word)) {
         lastDocId = lastDocInserted.get(word);
       }
-      indexPostingList.add(did - lastDocId);
+      BitSet b = new BitSet(5);
+      int bitcount = compression.compress(did - lastDocId, b, 0);      
+      //System.out.println(bitcount);
+      //indexPostingList.add(did - lastDocId);
       lastDocInserted.put(word, did);
-      indexPostingList.addAll(postingList);
+      bitcount = compression.compressBatch(postingList, b, bitcount);
+      //System.out.println(bitcount);
+      p.getSets().add(b);
+      //indexPostingList.addAll(postingList);
       
-      if(skipNumberList.containsKey(word)) {
-        int lastUpdated = skipNumberList.get(word);
-        lastUpdated++;
-        if(lastUpdated == skipSteps) {
-          skipNumberList.put(word, 0);
-          SkipPointer skipPointer = null;
-          if(skipPointerMap.containsKey(word)) {
-            skipPointer = skipPointerMap.get(word);
-          }
-          else {
-            skipPointer = new SkipPointer();
-          }
-          skipPointer.addPointer(did, posInPostingList.get(word));
-          //skipPointerMap.put(word, skipPointer);
-        }
-        else {
-          skipNumberList.put(word, lastUpdated);
-        }
-      }
-      else {
-        skipNumberList.put(word, 0);
-      }      
-      posInPostingList.put(word, indexPostingList.size());
-      index.put(word,indexPostingList);
+//      if(skipNumberList.containsKey(word)) {
+//        int lastUpdated = skipNumberList.get(word);
+//        lastUpdated++;
+//        if(lastUpdated == skipSteps) {
+//          skipNumberList.put(word, 0);
+//          SkipPointer skipPointer = null;
+//          if(skipPointerMap.containsKey(word)) {
+//            skipPointer = skipPointerMap.get(word);
+//          }
+//          else {
+//            skipPointer = new SkipPointer();
+//          }
+//          skipPointer.addPointer(did, posInPostingList.get(word));
+//          //skipPointerMap.put(word, skipPointer);
+//        }
+//        else {
+//          skipNumberList.put(word, lastUpdated);
+//        }
+//      }
+//      else {
+//        skipNumberList.put(word, 0);
+//      }      
+      posInPostingList.put(word, p.getCount());
+      //posInPostingList.put(word, indexPostingList.size());
+      
     }
     return;
   }
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
-    String indexFile = _options._indexPrefix + "/corpus_delta.idx";
+    String indexFile = _options._indexPrefix + "/corpus_comp.idx";
     System.out.println("Load index from: " + indexFile);
 
     ObjectInputStream reader =
         new ObjectInputStream(new FileInputStream(indexFile));
-    InvertedIndexerDelta loaded = (InvertedIndexerDelta) reader.readObject();
+    IndexerInvertedComp loaded = (IndexerInvertedComp) reader.readObject();
 
     this._documents = loaded._documents;
     // Compute numDocs and totalTermFrequency b/c Indexer is not serializable.
     this._numDocs = _documents.size();
-    this.index = loaded.index;
     this._totalTermFrequency = loaded._totalTermFrequency;
     this._options = loaded._options;
-    this.skipPointerMap = loaded.skipPointerMap;
+    //this.skipPointerMap = loaded.skipPointerMap;
     this.totalwords = loaded.totalwords;
     this.skipSteps = loaded.skipSteps;
     this.totalWordsInCorpus = loaded.totalWordsInCorpus;
+    this.index2 = loaded.index2;
+    this.compression = loaded.compression;
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
@@ -312,7 +365,8 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
    */
   @Override
   public Document nextDoc(Query query, int docid) {
-    int [] docids = new int[query._tokens.size()];
+    return null;
+    /*int [] docids = new int[query._tokens.size()];
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
@@ -346,7 +400,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       d._numwords = d1._numwords;
       return d;
     }
-    return nextDoc(query, maxDocId-1);
+    return nextDoc(query, maxDocId-1);*/
   }
   
   @Override
@@ -356,9 +410,10 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     boolean flag = true;
     int maxDocId = -1;
     System.out.println("next document");
-    List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
+    
     for(String term:query._tokens) {
-      postingLists.add(index.get(term));
+      //postingLists.add(index.get(term));
+      //postingLists1.add(index2.get(term));
       docs[i] = nextPosition(term,docid);
       if(docs[i] == null) {
         return null;
@@ -396,7 +451,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     return nextDocument(query, maxDocId-1);
   }
   
-  private List<Integer> getDocumentDetails(Query query, int docid) {
+  /*private List<Integer> getDocumentDetails(Query query, int docid) {
     List<Integer> docDetails = new ArrayList<Integer>();
     for(String term:query._tokens) {
       List<Integer> postingList = index.get(term);
@@ -407,36 +462,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       }
     }
     return docDetails;
-  }
-  
-  private List<Integer> getDocumentDetails(Query query, int[] docIdPositions) {
-    List<Integer> docDetails = new ArrayList<Integer>();
-    int j=0;
-    for(String term:query._tokens) {
-      List<Integer> postingList = index.get(term);
-      int afterNextP = getNextDocPos(postingList, docIdPositions[j]);
-      for(int i=docIdPositions[j]+1;i<afterNextP;i++) {
-        docDetails.add(postingList.get(i));
-      }
-      j++;
-    }
-    return docDetails;
-  }
-  
-  private List<List<Integer>> getDocumentDetails(String tokens[], int docpos[]) {
-    List<List<Integer>> docDetails = new ArrayList<List<Integer>>();
-    for(int j = 0 ; j < tokens.length; j++)
-    {
-      List<Integer> postingList = index.get(tokens[j]);
-      int afterNextP = getNextDocPos(postingList, docpos[j]);
-      List<Integer> pl = new ArrayList<Integer>();
-      docDetails.add(pl);
-      for(int i=docpos[j]+2; i<afterNextP; i++) {
-        pl.add(postingList.get(i));
-      }
-    }
-    return docDetails;
-  }
+  }*/
   
   private int getNextDocPos(List<Integer> postingList,int pos) {
     if(pos >= postingList.size()-1) {
@@ -530,7 +556,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
    * Returns position of doc id location in the posting list
    * which is greater than the docid passed
    */
-  private int nextPos(String term,int docid) {
+  /*private int nextPos(String term,int docid) {
     
     if(term.contains(" ")) {
       return 0;
@@ -554,6 +580,26 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       }
       return pos;
     }
+  }*/
+  
+  private List<Integer> getOneDocumentDetail(BitSet b) {
+    int[] temp = compression.deCompress(b, b.size(), 0);
+    int docid = temp[0];
+    int posOfCount = temp[1];
+    temp = compression.deCompress(b, b.size(), posOfCount);
+    int count = temp[0];
+    posOfCount = temp[1];
+    List<Integer> details = new ArrayList<Integer>();
+    details.add(docid);
+    details.add(count);
+    int totval = 0;
+    for(int i=1;i<=count;i++) {
+      temp = compression.deCompress(b, b.size(), posOfCount);
+      totval += temp[0];
+      details.add(totval);
+      posOfCount = temp[1];
+    }
+    return details;
   }
   
   private DocumentIndexed nextPosition(String term,int docid) {
@@ -562,12 +608,16 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       return nextPhrasePos(term, docid);
     }
     else {
-      List<Integer> postingList = index.get(term);
-      if(postingList == null) {
+      PostingList p = index2.get(term);
+      if(p == null)
+      {
         return null;
       }
+      int j = 0;
       int pos = 0;
-      int offset = postingList.get(0);
+      List<Integer> details = getOneDocumentDetail(p.getSets().get(0));
+      //int offset = postingList.get(0);
+      int offset = details.get(j);
       //SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
       //if(pair != null)
       //{
@@ -578,32 +628,45 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       
       if(currdocid > docid) {
         DocumentIndexed d = new DocumentIndexed(currdocid);
-        Document d1 = _documents.get(d._docid);
-        List<Integer> docDetails = new ArrayList<Integer>();
-        int afterNextP = getNextDocPos(postingList, pos);
-        int totval = 0;
-        for(int i = pos+1;i<afterNextP;i++) {
-          int val = postingList.get(i);
-          if( i > pos + 1)
-          {
-            totval += val;
-            docDetails.add(totval);
-          }  
-          else
-          {
-            docDetails.add(val);
-          }
-        }
-        d.setDocumentDetails(docDetails);
+//        Document d1 = _documents.get(d._docid);
+//        List<Integer> docDetails = new ArrayList<Integer>();
+//        int afterNextP = getNextDocPos(postingList, pos);
+//        int totval = 0;
+//        for(int i = pos+1;i<afterNextP;i++) {
+//          int val = postingList.get(i);
+//          if( i > pos + 1)
+//          {
+//            totval += val;
+//            docDetails.add(totval);
+//          }  
+//          else
+//          {
+//            docDetails.add(val);
+//          }
+//        }
+        
+        d.setDocumentDetails(details.subList(1, details.size()));
         return d;
       }
-      while(((pos = getNextDocPos(postingList, pos)) != -1) && pos < postingList.size()) {
-          currdocid += postingList.get(pos); 
-          if(currdocid > docid)
-              break;
+      j++;
+//      while(((pos = getNextDocPos(postingList, pos)) != -1) && pos < postingList.size()) {
+//          currdocid += postingList.get(pos); 
+//          if(currdocid > docid)
+//              break;
+//      }
+      
+      
+      while(j < p.getSets().size()) {
+        BitSet b = p.getSets().get(j);
+        details = getOneDocumentDetail(b);
+        //currdocid += postingList.get(pos); 
+        currdocid += details.get(0);
+        if(currdocid > docid)
+            break;
+        j++;
       }
       
-      if(pos >= postingList.size()) {
+      if(j >= p.getSets().size()) {
         return null;
       }
       if(currdocid >= _documents.size())
@@ -611,30 +674,30 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
         return null;
       }
       DocumentIndexed d = new DocumentIndexed(currdocid);
-      Document d1 = _documents.get(d._docid);
-      List<Integer> docDetails = new ArrayList<Integer>();
-      int afterNextP = getNextDocPos(postingList, pos);
-      int totval = 0;
-      for(int i = pos+1;i<afterNextP;i++) {
-        int val = postingList.get(i);
-        if( i > pos + 1)
-        {
-          totval += val;
-          docDetails.add(totval);
-        }  
-        else
-        {
-          docDetails.add(val);
-        }
-      }
-      d.setDocumentDetails(docDetails);
+//      Document d1 = _documents.get(d._docid);
+//      List<Integer> docDetails = new ArrayList<Integer>();
+//      int afterNextP = getNextDocPos(postingList, pos);
+//      int totval = 0;
+//      for(int i = pos+1;i<afterNextP;i++) {
+//        int val = postingList.get(i);
+//        if( i > pos + 1)
+//        {
+//          totval += val;
+//          docDetails.add(totval);
+//        }  
+//        else
+//        {
+//          docDetails.add(val);
+//        }
+//      }
+      d.setDocumentDetails(details.subList(1, details.size()));
       return d;
     }
   }
   
   //This method does a linear search.
   //Binary search with skip pointers to be implemented.
-  private int next(String term,int docid) {
+  /*private int next(String term,int docid) {
     List<Integer> postingList = index.get(term);
     int nextP = nextPos(term, docid);
     if(nextP == -1) {
@@ -643,55 +706,43 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     else {
       return postingList.get(nextP);
     }
-  }
+  }*/
   
-  private int binarySearch(String term, int low, int high, int current) {
-    List<Integer> postingList = index.get(term);
-    int mid = 0;
-    while(high - low > 0) {
-      mid = (low + high) / 2;
-      if(postingList.get(mid) <= current) {
-        low = mid;
-      }
-      else {
-        high = mid;
-      }
-    }
-    return high;
-  }
-  
-  
+
   
   @Override
   public int corpusDocFrequencyByTerm(String term) {
-    List<Integer> postingList = index.get(term);
-    if(postingList == null || (postingList.size() == 0)) {
-      return 0;
-    }
-    int pos = 0;
-    int count = 0;
-    while((pos = getNextDocPos(postingList, pos)) != -1) {
-      count += 1;
-    }
-    return count;
+//    List<Integer> postingList = index.get(term);
+//    if(postingList == null || (postingList.size() == 0)) {
+//      return 0;
+//    }
+//    int pos = 0;
+//    int count = 0;
+//    while((pos = getNextDocPos(postingList, pos)) != -1) {
+//      count += 1;
+//    }
+//    return count;
+    return 0;
   }
 
   public int corpusTermFrequency() {
-    return index.keySet().size();
+    ///return index.keySet().size();
+    return 0;
   }
   
   @Override
   public int corpusTermFrequency(String term) {
-    List<Integer> postingList = index.get(term);
-    if(postingList == null || (postingList.size() == 0)) {
-      return 0;
-    }
-    int pos = 0;
-    int count = postingList.get(1);
-    while((pos = getNextDocPos(postingList, pos)) != -1) {
-      count += postingList.get(pos+1);
-    }
-    return count;
+//    List<Integer> postingList = index.get(term);
+//    if(postingList == null || (postingList.size() == 0)) {
+//      return 0;
+//    }
+//    int pos = 0;
+//    int count = postingList.get(1);
+//    while((pos = getNextDocPos(postingList, pos)) != -1) {
+//      count += postingList.get(pos+1);
+//    }
+//    return count;
+    return 0;
   }
 
   @Override
@@ -701,17 +752,17 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
   }
   
   public int documentTermFrequency(String term,int docid) {
-    List<Integer> postingList = index.get(term);
-    int pos = 0;
-    if(postingList.get(pos) == docid) {
-      return postingList.get(pos+1);
-    }
-    while(((pos = getNextDocPos(postingList, pos)) != -1) 
-        && (postingList.get(pos) <= docid)) {
-      if(postingList.get(pos) == docid) {
-        return postingList.get(pos+1);
-      }
-    }
+//    List<Integer> postingList = index.get(term);
+//    int pos = 0;
+//    if(postingList.get(pos) == docid) {
+//      return postingList.get(pos+1);
+//    }
+//    while(((pos = getNextDocPos(postingList, pos)) != -1) 
+//        && (postingList.get(pos) <= docid)) {
+//      if(postingList.get(pos) == docid) {
+//        return postingList.get(pos+1);
+//      }
+//    }
     return 0;
   }
 }

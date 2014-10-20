@@ -2,6 +2,7 @@ package edu.nyu.cs.cs2580.Compress;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
 abstract public class Compression {
 	
@@ -20,7 +21,7 @@ abstract public class Compression {
 	    return bits;
 	}
 	
-	//Set bits of BitSet b to b2 from index start to index end
+	//Set bits in BitSet b to b2 from index start to index end
 	protected static void set(BitSet b, BitSet b2, int start, int end) {
 		for(int i = 0 ; i < end - start; i++ )
 		{
@@ -39,6 +40,7 @@ abstract public class Compression {
 	}
 	
 	abstract public int compressBatch(int arg[], BitSet b);
+	abstract public int compressBatch(List<Integer> arg, BitSet b,int pos);
 	abstract public int compress(int arg, BitSet b, int pos);
 	abstract public ArrayList<Integer> deCompressBatch(BitSet b, int count);
 	abstract public int[] deCompress(BitSet b, int count, int pos);

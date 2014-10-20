@@ -1,11 +1,18 @@
 package edu.nyu.cs.cs2580.Compress;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
-public class DeltaCompression extends Compression{
+public class DeltaCompression extends Compression implements Serializable{
 
-	@Override
+	/**
+   * 
+   */
+  private static final long serialVersionUID = 7057030826431982033L;
+
+  @Override
 	public int compressBatch(int[] arg, BitSet b) {
 		// TODO Auto-generated method stub
 		int bitpos = 0;
@@ -38,7 +45,7 @@ public class DeltaCompression extends Compression{
 	public int compress(int arg, BitSet b, int pos) {
 		// TODO Auto-generated method stub
 		int bitpos = pos;
-		int k = arg;
+		int k = arg+1;
 		int kd = (int)Math.floor((Math.log(k)/log2));
 		int kr = k - (1<<kd);
 		int kdd = (int)Math.floor((Math.log(kd + 1)/log2));
@@ -116,9 +123,9 @@ public class DeltaCompression extends Compression{
 		if(unary == 0)
 		{
 			if(i < count)
-				return new int[]{1, i};
+				return new int[]{1-1, i};
 			else
-				return new int[]{1, -1};
+				return new int[]{1-1, -1};
 		}
 		
 		else
@@ -143,10 +150,39 @@ public class DeltaCompression extends Compression{
 			int ans = ((1 << kd) + val);
 			i = i + kd ;
 			if(i < count)
-				return new int[]{ans, i};
+				return new int[]{ans-1, i};
 			else
-				return new int[]{ans, -1};
+				return new int[]{ans-1, -1};
 		}
 	}
+	
+  @Override
+  public int compressBatch(List<Integer> arg, BitSet b,int pos) {
+ // TODO Auto-generated method stub
+    int bitpos = pos;
+    for(int i = 0; i < arg.size(); i++)
+    {
+      int k = arg.get(i)+1;
+      int kd = (int)Math.floor((Math.log(k)/log2));
+      int kr = k - (1<<kd);
+      int kdd = (int)Math.floor((Math.log(kd + 1)/log2));
+      int kdr = kd - (1<<(kdd)) + 1;
+      b.set(bitpos, bitpos + kdd, true);
+      bitpos += kdd;
+      b.set(bitpos, false);
+      bitpos++;
+      BitSet b2 = convert(kdr, kdd);
+      set(b, b2, bitpos, bitpos + kdd);
+      bitpos += kdd;
+      b2 = convert(kr, kd);
+      set(b, b2, bitpos, bitpos + kd);
+      bitpos += kd;
+//      System.out.println(kd);
+//      System.out.println(kr);
+//      System.out.println(kdd);
+//      System.out.println(kdr);
+    }
+    return bitpos;
+  }
 
 }
