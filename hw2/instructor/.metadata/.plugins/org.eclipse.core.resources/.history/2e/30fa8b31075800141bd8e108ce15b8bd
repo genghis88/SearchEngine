@@ -16,12 +16,15 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
 import java.util.Set;
+<<<<<<< HEAD
+=======
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import edu.nyu.cs.cs2580.SkipPointer.*;
+>>>>>>> 72cce5e093202382bf0bdd5b027227e4fcc917dc
 
 import javax.xml.soap.Detail;
 
