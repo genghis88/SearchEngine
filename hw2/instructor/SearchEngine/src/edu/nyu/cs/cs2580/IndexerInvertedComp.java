@@ -59,6 +59,9 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
       return count;
     }
     public void setCount(int count) {
+      if(count < this.count)
+    	  System.out.println(count);
+      
       this.count = count;
     }   
     
@@ -75,13 +78,20 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
     
     public int[] get(int pos)
     {
-    	return compress.deCompress(getBits(), getCount(), pos);
+    	if(pos < 0)
+    		System.out.println("culprit2");
+    	try {
+    		return compress.deCompress(getBits(), getCount(), pos);
+		} catch (Exception e) {
+			// TODO: handle exception
+			return new int[]{-1,-1};
+		}
+    	
     }
   }
   private static final long serialVersionUID = 1L;
   private Vector<DocumentIndexed> _documents = new Vector<DocumentIndexed>();
   private HashMap<String,PostingList> index2 = new HashMap<String,PostingList>();
-  private Compression compression = new DeltaCompression();
   //private HashMap<String,SkipPointer> skipPointerMap;
   private int totalwords = 0;
   private long totalWordsInCorpus = 0;
@@ -369,7 +379,6 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
     this.skipSteps = loaded.skipSteps;
     this.totalWordsInCorpus = loaded.totalWordsInCorpus;
     this.index2 = loaded.index2;
-    this.compression = loaded.compression;
     reader.close();
 
     System.out.println(Integer.toString(_numDocs) + " documents loaded " +
@@ -396,8 +405,7 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
-    System.out.println("next document");
-    
+   
     for(String term:query._tokens) {
       //postingLists.add(index.get(term));
       //postingLists1.add(index2.get(term));
@@ -520,7 +528,9 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
   
  
   private int getDocumentDetail(PostingList p, int pos, List<Integer> details) {
-	    int [] temp = p.get(pos);
+	  	if(pos == -1)
+	  		return -2;
+	  	int [] temp = p.get(pos);
 	    int docid = temp[0];
 	    temp = p.get(temp[1]);
 	    int count = temp[0];
@@ -568,15 +578,17 @@ public class IndexerInvertedComp extends Indexer implements Serializable{
         return d;
       }
 
-      while(j < p.getCount()) {
+      while(j < p.getCount() && j != -2) {
         details.clear();
         j = getDocumentDetail(p, j, details);
+        if(j == -2)
+        	break;
         currdocid += details.get(0);
         if(currdocid > docid)
             break;
       }
       
-      if(j >= p.getCount()) {
+      if(j >= p.getCount() || j == -2) {
         return null;
       }
       if(currdocid >= _documents.size())
