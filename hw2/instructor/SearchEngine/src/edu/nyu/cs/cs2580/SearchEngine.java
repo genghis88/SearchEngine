@@ -55,7 +55,8 @@ public class SearchEngine {
     public String _indexerType = null;
 
     // Additional group specific configuration can be added below.
-    
+    public String _corpus = null;
+    public String _index_file = null;
     /**
      * Constructor for options.
      * @param optionFile where all the options must reside
@@ -89,6 +90,8 @@ public class SearchEngine {
       // Populate specific options.
       _indexerType = options.get("indexer_type");
       Check(_indexerType != null, "Missing option: indexer_type!");
+      _corpus = options.get("corpus");
+      _index_file = options.get("index_file");
     }
   }
   public static Options OPTIONS = null;

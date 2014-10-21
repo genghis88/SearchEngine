@@ -44,52 +44,98 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     skipPointerMap = new HashMap<String,SkipPointer>();
   }
   
-  public void test() throws Exception {
-    String corpusDirectoryString = _options._corpusPrefix;
-    System.out.println("Construct index from: " + corpusDirectoryString);
-    final File corpusDirectory = new File(corpusDirectoryString);
-    HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
-    HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
-    for (final File fileEntry : corpusDirectory.listFiles()) {
-      if (!fileEntry.isDirectory()) {
-        String docTitle = "";
-        StringBuilder sb = new StringBuilder();
-        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
+  public void parse() throws Exception {
+	    String corpusDirectoryString = _options._corpusPrefix;
+	    System.out.println("Construct index from: " + corpusDirectoryString);
+	    final File corpusDirectory = new File(corpusDirectoryString);
+	    HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
+	    HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
+	    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
+	    for (final File fileEntry : corpusDirectory.listFiles()) {
+	      if (!fileEntry.isDirectory()) {
+	        String docTitle = "";
+	        StringBuilder sb = new StringBuilder();
+	        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
 
-        Element head = doc.select("h1[id=firstHeading]").first();
-        if(head != null && head.text() != null) {
-          //System.out.println(head.text().trim());
-          docTitle = head.text().trim();
-          sb.append(docTitle.toLowerCase());
-        }
-        Elements content_text = doc.select("div[id=mw-content-text]");
-        for (Element elem : content_text) {
-          Elements paras = elem.getElementsByTag("p");
-          Elements h2s = elem.getElementsByTag("h2");
+	        Element head = doc.select("h1[id=firstHeading]").first();
+	        if(head != null && head.text() != null) {
+	          //System.out.println(head.text().trim());
+	          docTitle = head.text().trim();
+	          sb.append(docTitle.toLowerCase());
+	        }
+	        Elements content_text = doc.select("div[id=mw-content-text]");
+	        for (Element elem : content_text) {
+	          Elements paras = elem.getElementsByTag("p");
+	          Elements h2s = elem.getElementsByTag("h2");
 
-          for (Element h2 : h2s) {
-            //System.out.println(h2.getElementsByClass("mw-headline").first());
-            Element headLine = h2.getElementsByClass("mw-headline").first();
-            if(headLine != null) {
-              sb.append(headLine.text().toLowerCase());
-            }
-          }
-          for (Element para : paras) {
-            //System.out.println(para.text().trim());
-            if(para.text() != null) {
-              sb.append(para.text().trim().toLowerCase());
-            }
-          }
-        }
-        sb.toString();
-        processDocument(docTitle,sb.toString(),posInPostingList,skipNumberList);        
-      }
+	          for (Element h2 : h2s) {
+	            //System.out.println(h2.getElementsByClass("mw-headline").first());
+	            Element headLine = h2.getElementsByClass("mw-headline").first();
+	            if(headLine != null) {
+	              sb.append(headLine.text().toLowerCase());
+	            }
+	          }
+	          for (Element para : paras) {
+	            //System.out.println(para.text().trim());
+	            if(para.text() != null) {
+	              sb.append(para.text().trim().toLowerCase());
+	            }
+	          }
+	        }
+	        sb.toString();
+	        processDocument(docTitle , sb.toString(),posInPostingList,skipNumberList,lastDocInserted);        
+	      }
+	    }    
+  }
+  
+  public void noParse() throws IOException
+  {
+	  String corpusFile = _options._corpusPrefix + "/corpus.tsv";
+	    System.out.println("Construct index from: " + corpusFile);
+	    HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
+	    HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
+	    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
+	    BufferedReader reader = new BufferedReader(new FileReader(corpusFile));
+	    try {
+	      String line = null;
+	      while ((line = reader.readLine()) != null) {
+	        processDocument(line,posInPostingList,skipNumberList, lastDocInserted);
+	      }
+	    } 
+	    catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	    finally {
+	      reader.close();
+	    }
+  }
+  @Override
+  public void constructIndex() throws IOException {
+    if(_options._corpus.equals("parse"))
+    {
+    	try {
+	      parse();
+	    }
+	    catch(Exception e) {
+	      e.printStackTrace();
+	    }
     }
+    else
+    {
+    	try {
+  	      noParse();
+  	    }
+  	    catch(Exception e) {
+  	      e.printStackTrace();
+  	    }
+    }
+    
     System.out.println(
         "Indexed " + Integer.toString(_numDocs) + " docs with " +
-        Long.toString(_totalTermFrequency) + " terms.");
+            Long.toString(_totalTermFrequency) + " terms.");
 
-    String indexFile = _options._indexPrefix + "/corpus_wiki_delta.idx";
+    String indexFile = _options._indexPrefix + "/" + _options._index_file;
     System.out.println("Store index to: " + indexFile);
     ObjectOutputStream writer =
         new ObjectOutputStream(new FileOutputStream(indexFile));
@@ -98,54 +144,18 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     System.out.println("Index File Created!");
   }
   
-  @Override
-  public void constructIndex() throws IOException {
-    try {
-      test();
-    }
-    catch(Exception e) {
-      e.printStackTrace();
-    }
-    /*String corpusFile = _options._corpusPrefix + "/corpus.tsv";
-    System.out.println("Construct index from: " + corpusFile);
-    HashMap<String,Integer> skipNumberList = new HashMap<String,Integer>();
-    HashMap<String,Integer> posInPostingList = new HashMap<String,Integer>();
-    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
-    BufferedReader reader = new BufferedReader(new FileReader(corpusFile));
-    try {
-      String line = null;
-      while ((line = reader.readLine()) != null) {
-        processDocument(line,posInPostingList,skipNumberList,lastDocInserted);
-      }
-    } finally {
-      reader.close();
-    }
-    System.out.println(
-        "Indexed " + Integer.toString(_numDocs) + " docs with " +
-        Long.toString(_totalTermFrequency) + " terms.");
 
-    String indexFile = _options._indexPrefix + "/corpus_delta.idx";
-    System.out.println("Store index to: " + indexFile);
-    ObjectOutputStream writer =
-        new ObjectOutputStream(new FileOutputStream(indexFile));
-    writer.writeObject(this);
-    writer.close();*/
-  }
-  
-  private void processDocument(String title,String content, HashMap<String,Integer> posInPostingList, HashMap<String,Integer> skipNumberList) 
+private void processDocument(String title,
+		String content, 
+		HashMap<String,Integer> posInPostingList, 
+		HashMap<String,Integer> skipNumberList , 
+		HashMap<String,Integer> lastDocInserted) 
   {
-    //Scanner s = new Scanner(content).useDelimiter("\t");
-
-    //String title = s.next();
     HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
-    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
     double normfactor = 0; 
     readTermVector(title + " " + content, tokens);
     int docid = _documents.size();
     updateIndex(tokens,docid,posInPostingList,skipNumberList,lastDocInserted);   
-
-    //int numViews = Integer.parseInt(s.next());
-    //s.close();
     
     for(String token: tokens.keySet()) {
       int x = tokens.get(token).get(0);
@@ -155,7 +165,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     DocumentIndexed doc = new DocumentIndexed(_documents.size());
     doc.setTitle(title);
     doc._normfactor = Math.sqrt(normfactor);
-    //doc.setNumViews(numViews);
+    
     doc._numwords = totalwords;
     _documents.add(doc);
     totalWordsInCorpus += totalwords;
@@ -164,36 +174,37 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
   }
   
   private void processDocument(String content, 
-      HashMap<String,Integer> posInPostingList, 
-      HashMap<String,Integer> skipNumberList,
-      HashMap<String,Integer> lastDocInserted) 
+		  HashMap<String,Integer> posInPostingList, 
+		  HashMap<String,Integer> skipNumberList, 
+		  HashMap<String,Integer> lastDocInserted) 
   {
-    Scanner s = new Scanner(content).useDelimiter("\t");
-
-    String title = s.next();
-    HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
-    double normfactor = 0; 
-    readTermVector(title + " " + s.next(), tokens);
-    int docid = _documents.size();
-    updateIndex(tokens,docid,posInPostingList,skipNumberList,lastDocInserted);   
-
-    int numViews = Integer.parseInt(s.next());
-    s.close();
-    
-    for(String token: tokens.keySet()) {
-      int x = tokens.get(token).get(0);
-      normfactor += x*x;
-    }
-    
-    DocumentIndexed doc = new DocumentIndexed(_documents.size());
-    doc.setTitle(title);
-    doc._normfactor = Math.sqrt(normfactor);
-    doc.setNumViews(numViews);
-    doc._numwords = totalwords;
-    _documents.add(doc);
-    totalWordsInCorpus += totalwords;
-    totalwords=0;
-    ++_numDocs;
+	    @SuppressWarnings("resource")
+		Scanner s = new Scanner(content).useDelimiter("\t");
+	
+	    String title = s.next();
+	    HashMap<String, List<Integer>> tokens = new HashMap<String, List<Integer>>();
+	    double normfactor = 0; 
+	    readTermVector(title + " " + s.next(), tokens);
+	    int docid = _documents.size();
+	    updateIndex(tokens,docid,posInPostingList,skipNumberList,lastDocInserted);   
+	
+	    int numViews = Integer.parseInt(s.next());
+	    s.close();
+	    
+	    for(String token: tokens.keySet()) {
+		      int x = tokens.get(token).get(0);
+		      normfactor += x*x;
+	    }
+	    
+	    DocumentIndexed doc = new DocumentIndexed(_documents.size());
+	    doc.setTitle(title);
+	    doc._normfactor = Math.sqrt(normfactor);
+	    doc.setNumViews(numViews);
+	    doc._numwords = totalwords;
+	    _documents.add(doc);
+	    totalWordsInCorpus += totalwords;
+	    totalwords=0;
+	    ++_numDocs;
 
     
   }
@@ -201,7 +212,8 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
   private void readTermVector(String content, 
   HashMap<String, List<Integer>> tokens) 
   {
-    Scanner s = new Scanner(content);  // Uses white space by default.
+    @SuppressWarnings("resource")
+	Scanner s = new Scanner(content);  // Uses white space by default.
     int wordcount = 1;
     HashMap<String, Integer> lastOccurenceofWordinDoc = new HashMap<String, Integer>();
     while (s.hasNext()) {
@@ -279,7 +291,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
 
   @Override
   public void loadIndex() throws IOException, ClassNotFoundException {
-    String indexFile = _options._indexPrefix + "/corpus_delta.idx";
+    String indexFile = _options._indexPrefix + "/" + _options._index_file;
     System.out.println("Load index from: " + indexFile);
 
     ObjectInputStream reader =
@@ -355,7 +367,7 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
     int i = 0;
     boolean flag = true;
     int maxDocId = -1;
-    System.out.println("next document");
+    
     List<List<Integer>> postingLists = new ArrayList<List<Integer>>();
     for(String term:query._tokens) {
       postingLists.add(index.get(term));
@@ -404,35 +416,6 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       int afterNextP = getNextDocPos(postingList, nextP);
       for(int i=nextP+1;i<afterNextP;i++) {
         docDetails.add(postingList.get(i));
-      }
-    }
-    return docDetails;
-  }
-  
-  private List<Integer> getDocumentDetails(Query query, int[] docIdPositions) {
-    List<Integer> docDetails = new ArrayList<Integer>();
-    int j=0;
-    for(String term:query._tokens) {
-      List<Integer> postingList = index.get(term);
-      int afterNextP = getNextDocPos(postingList, docIdPositions[j]);
-      for(int i=docIdPositions[j]+1;i<afterNextP;i++) {
-        docDetails.add(postingList.get(i));
-      }
-      j++;
-    }
-    return docDetails;
-  }
-  
-  private List<List<Integer>> getDocumentDetails(String tokens[], int docpos[]) {
-    List<List<Integer>> docDetails = new ArrayList<List<Integer>>();
-    for(int j = 0 ; j < tokens.length; j++)
-    {
-      List<Integer> postingList = index.get(tokens[j]);
-      int afterNextP = getNextDocPos(postingList, docpos[j]);
-      List<Integer> pl = new ArrayList<Integer>();
-      docDetails.add(pl);
-      for(int i=docpos[j]+2; i<afterNextP; i++) {
-        pl.add(postingList.get(i));
       }
     }
     return docDetails;
@@ -578,7 +561,6 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       
       if(currdocid > docid) {
         DocumentIndexed d = new DocumentIndexed(currdocid);
-        Document d1 = _documents.get(d._docid);
         List<Integer> docDetails = new ArrayList<Integer>();
         int afterNextP = getNextDocPos(postingList, pos);
         int totval = 0;
@@ -611,7 +593,6 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
         return null;
       }
       DocumentIndexed d = new DocumentIndexed(currdocid);
-      Document d1 = _documents.get(d._docid);
       List<Integer> docDetails = new ArrayList<Integer>();
       int afterNextP = getNextDocPos(postingList, pos);
       int totval = 0;
@@ -644,23 +625,6 @@ public class InvertedIndexerDelta extends Indexer implements Serializable{
       return postingList.get(nextP);
     }
   }
-  
-  private int binarySearch(String term, int low, int high, int current) {
-    List<Integer> postingList = index.get(term);
-    int mid = 0;
-    while(high - low > 0) {
-      mid = (low + high) / 2;
-      if(postingList.get(mid) <= current) {
-        low = mid;
-      }
-      else {
-        high = mid;
-      }
-    }
-    return high;
-  }
-  
-  
   
   @Override
   public int corpusDocFrequencyByTerm(String term) {

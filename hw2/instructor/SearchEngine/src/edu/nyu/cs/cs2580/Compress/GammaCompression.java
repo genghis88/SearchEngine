@@ -110,12 +110,18 @@ public class GammaCompression extends Compression implements Serializable{
 		// TODO Auto-generated method stub
 		int unary = 0;
 		int i = pos;
+		try{
 		while(b.get(i))
 		{
 			unary++;
 			i++;
 		}
-		
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			return null;
+		}
 		i++;
 		if(unary == 0)
 		{
