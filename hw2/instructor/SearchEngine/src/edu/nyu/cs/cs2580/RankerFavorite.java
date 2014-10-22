@@ -1,6 +1,5 @@
 package edu.nyu.cs.cs2580;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;

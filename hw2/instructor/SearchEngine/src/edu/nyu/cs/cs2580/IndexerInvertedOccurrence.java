@@ -626,7 +626,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     Query query = new QueryPhrase(quotedterm);
     query.processQuery();
     int docid = -1;
-    while ((doc = nextDoc(query, docid)) != null) {
+    while ((doc = nextDocument(query, docid)) != null) {
       DocumentIndexed temp = (DocumentIndexed)doc;
       List<Integer> postingList= temp.getDocumentDetails();
       totalphrases += postingList.get(0);
