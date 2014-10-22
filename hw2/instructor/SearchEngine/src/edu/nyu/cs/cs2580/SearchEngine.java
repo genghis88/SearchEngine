@@ -57,6 +57,7 @@ public class SearchEngine {
     // Additional group specific configuration can be added below.
     public String _corpus = null;
     public String _index_file = null;
+    public int skips = 100;
     /**
      * Constructor for options.
      * @param optionFile where all the options must reside
@@ -92,6 +93,7 @@ public class SearchEngine {
       Check(_indexerType != null, "Missing option: indexer_type!");
       _corpus = options.get("corpus");
       _index_file = options.get("index_file");
+      skips = Integer.parseInt(options.get("skip"));
     }
   }
   public static Options OPTIONS = null;

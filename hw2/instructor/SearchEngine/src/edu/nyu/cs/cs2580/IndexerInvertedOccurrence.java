@@ -38,7 +38,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   private HashMap<String,Integer> corpusDocFrequency = new HashMap<String, Integer>();
   private HashMap<String,Integer> corpusTermFrequency = new HashMap<String, Integer>();
   private HashMap<String,SkipPointer> skipPointerMap;
-  private int skipSteps = 100;
+  private int skipSteps;
   public long totalWordsInCorpus = 0;
   public IndexerInvertedOccurrence(Options options) {
     super(options);
@@ -47,6 +47,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   }
 
   public void parse() throws Exception {
+	  
     String corpusDirectoryString = _options._corpusPrefix;
     System.out.println("Construct index from: " + corpusDirectoryString);
     final File corpusDirectory = new File(corpusDirectoryString);
@@ -113,7 +114,8 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
   
   @Override
   public void constructIndex() throws IOException {
-    if(_options._corpus.equals("parse"))
+    this.skipSteps = _options.skips;
+	if(_options._corpus.equals("parse"))
     {
     	try {
 	      parse();
@@ -271,6 +273,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
             }
             else {
               skipPointer = new SkipPointer();
+              skipPointerMap.put(word, skipPointer);
             }
             skipPointer.addPointer(did, posInPostingList.get(word));
             skipPointerMap.put(word, skipPointer);
@@ -291,7 +294,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
 	long x = (System.currentTimeMillis());
 	String indexFile = _options._indexPrefix + "/" + _options._index_file;
     System.out.println("Load index from: " + indexFile);
-
+    this.skipSteps = _options.skips;
     ObjectInputStream reader =
         new ObjectInputStream(new FileInputStream(indexFile));
     IndexerInvertedOccurrence loaded = (IndexerInvertedOccurrence) reader.readObject();
@@ -302,7 +305,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     this.index = loaded.index;
     this._totalTermFrequency = loaded._totalTermFrequency;
     this.skipPointerMap = loaded.skipPointerMap;
-    this.skipSteps = loaded.skipSteps;
+   
     this.totalWordsInCorpus = loaded.totalWordsInCorpus;
     this.corpusDocFrequency = loaded.corpusDocFrequency;
     this.corpusTermFrequency = loaded.corpusTermFrequency;
@@ -415,19 +418,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       return d;
     }
     return nextDocument(query, maxDocId-1);
-  }
-
-  private List<Integer> getDocumentDetails(Query query, int docid) {
-    List<Integer> docDetails = new ArrayList<Integer>();
-    for(String term:query._tokens) {
-      List<Integer> postingList = index.get(term);
-      int nextP = nextPos(term, docid);
-      int afterNextP = getNextDocPos(postingList, nextP);
-      for(int i=nextP+1;i<afterNextP;i++) {
-        docDetails.add(postingList.get(i));
-      }
-    }
-    return docDetails;
   }
 
   private List<List<Integer>> getDocumentDetails(String tokens[], int docpos[]) {
@@ -578,7 +568,7 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
     	  SkipPointer.Pair p = skipPointerMap.get(term).search(docid);
     	  pos = (int) p.getPos();
     	  currdocid = p.getDocid();
-    	  if(currdocid > docid)
+    	  if(currdocid > docid || docid == -1)
     	  {
     		  pos = 0;
     	      currdocid = postingList.get(pos);
@@ -615,19 +605,6 @@ public class IndexerInvertedOccurrence extends Indexer implements Serializable {
       }
       d.setDocumentDetails(docDetails);
       return d;
-    }
-  }
-
-  //This method does a linear search.
-  //Binary search with skip pointers to be implemented.
-  private int next(String term,int docid) {
-    List<Integer> postingList = index.get(term);
-    int nextP = nextPos(term, docid);
-    if(nextP == -1) {
-      return -1;
-    }
-    else {
-      return postingList.get(nextP);
     }
   }
 

@@ -52,6 +52,19 @@ public class SkipPointer implements Serializable {
 		int low = 0;
 		int high = pairlist.size()-1;
 		
+		Pair lowp = pairlist.get(low);
+		if(lowp.getDocid() >= docid)
+		{
+			Pair p = new Pair();
+			p.setDocid(-1);
+			p.setPos(0);
+			return p;
+		}
+		Pair highp = pairlist.get(high);
+		if(highp.getDocid() < docid)
+		{
+			return highp;
+		}
 		while(low < high)
 		{
 			int mid = (low + high)/2;
@@ -80,5 +93,23 @@ public class SkipPointer implements Serializable {
 		}
 		
 		return pairlist.get(low);
+	}
+	
+	public static void main(String[] args) {
+		
+			SkipPointer sp = new SkipPointer();
+			sp.addPointer(5, 50);
+			sp.addPointer(10, 100);
+			sp.addPointer(15, 150);
+			sp.addPointer(20, 200);
+			sp.addPointer(25, 250);
+			sp.addPointer(30, 300);
+		
+			for(int j = 0; j < 35; j++)
+			{
+				
+				Pair p = sp.search(j);
+				System.out.println(j + " " + p.getDocid() + " " +p.getPos());
+			}
 	}
 }

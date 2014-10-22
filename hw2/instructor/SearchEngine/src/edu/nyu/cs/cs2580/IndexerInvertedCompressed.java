@@ -131,7 +131,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   private HashMap<String,PostingList> index = new HashMap<String,PostingList>();
   private HashMap<String,SkipPointer> skipPointerMap;
   private long totalWordsInCorpus = 0;
-  private int skipSteps = 100;
+  private int skipSteps;
   private HashMap<String, Integer> urlToDocId = new HashMap<String, Integer>();
   public IndexerInvertedCompressed(Options options) {
     super(options);
@@ -140,6 +140,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   }
   
   public void parse() throws Exception {
+	  	
 	    String corpusDirectoryString = _options._corpusPrefix;
 	    System.out.println("Construct index from: " + corpusDirectoryString);
 	    final File corpusDirectory = new File(corpusDirectoryString);
@@ -148,7 +149,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 	    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
 	    for (final File fileEntry : corpusDirectory.listFiles()) {
 	      if (!fileEntry.isDirectory()) {
-	    	String url = fileEntry.getAbsolutePath();
+	    	String url = fileEntry.getName().toLowerCase();
 	        String docTitle = "";
 	        StringBuilder sb = new StringBuilder();
 	        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
@@ -209,7 +210,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   
   @Override
   public void constructIndex() throws IOException {
-    if(_options._corpus.equals("parse"))
+	skipSteps = _options.skips;
+	if(_options._corpus.equals("parse"))
     {
     	try {
 	      parse();
@@ -264,7 +266,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     doc._normfactor = Math.sqrt(normfactor);
     doc._numwords = totalwords;
     doc.setUrl(url);
-    urlToDocId.put(url, _documents.size());
+    
+    urlToDocId.put(url, doc._docid);
     _documents.add(doc);
     ++_numDocs;
   }
@@ -379,6 +382,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
           }
           else {
             skipPointer = new SkipPointer();
+            skipPointerMap.put(word, skipPointer);
           }
           skipPointer.addPointer(did, p.getCount());
         }
@@ -399,7 +403,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 	long x = (System.currentTimeMillis());
 	String indexFile = _options._indexPrefix + "/" + _options._index_file;    
     System.out.println("Load index from: " + indexFile);
-
+    this.skipSteps = _options.skips;
     ObjectInputStream reader =
         new ObjectInputStream(new FileInputStream(indexFile));
     IndexerInvertedCompressed loaded = (IndexerInvertedCompressed) reader.readObject();
@@ -409,8 +413,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     this._numDocs = _documents.size();
     this._totalTermFrequency = loaded._totalTermFrequency;
     this.skipPointerMap = loaded.skipPointerMap;
-    this.skipSteps = loaded.skipSteps;
     this.totalWordsInCorpus = loaded.totalWordsInCorpus;
+    this.urlToDocId = loaded.urlToDocId;
     this.index = loaded.index;
     reader.close();
 
@@ -574,7 +578,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   }
   
   private DocumentIndexed nextPosition(String term,int docid) {
-    
+ 
     if(term.contains(" ")) {
       return nextPhrasePos(term, docid);
     }
@@ -592,12 +596,13 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
       int offset = details.get(0);
       
       if(skipPointerMap.containsKey(term))
-      {	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
+      {
+    	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
       	if(pair != null)
       	{
       		j = (int)pair.getPos();
       		offset = pair.getDocid();
-      		if(offset > docid)
+      		if(offset == -1 || offset > docid)
       		{
       			j = getDocumentDetail(p,j,details);
       			offset = details.get(0);
@@ -655,6 +660,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   @Override
   public int documentTermFrequency(String term, String url) {
     //SearchEngine.Check(false, "Not implemented!");
+	 if(!urlToDocId.containsKey(url))
+		return 0;
     int docid = urlToDocId.get(url);
     PostingList p = index.get(term);
     int currdocid = 0;
@@ -664,13 +671,12 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
     	currdocid = pair.getDocid();
     	j = (int )pair.getPos();
-    	if(currdocid > docid)
+    	if(currdocid == -1)
     	{
     		int temp[] = p.get(0);
     		currdocid = temp[0];
     		j = temp[1];
-    	}
-    	
+    	}    	
     }
     else
     {

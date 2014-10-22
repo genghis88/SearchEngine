@@ -35,9 +35,13 @@ public class RankerFavorite extends Ranker
 	      while (iter.hasNext()) {
 	        Integer counts = (Integer) iter.next();
 	        countslist.add(counts);
+	        
 	        for(int k = 0; k < counts; k++)
 	        {
-	          iter.next();
+	        	if(iter.hasNext())
+	        		iter.next();
+	        	else
+	        		break;
 	        }
 	      }
 	      for(int i=0 ; i<query._tokens.size() ; i++)
