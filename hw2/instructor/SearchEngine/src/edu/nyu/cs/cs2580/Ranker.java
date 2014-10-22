@@ -69,7 +69,8 @@ public abstract class Ranker {
         return new RankerFavorite(options, arguments, indexer);
       case COSINE:
         // Plug in your cosine Ranker
-        return new CosineRanker(options,arguments,indexer);
+        break;
+    	  //return new CosineRanker(options,arguments,indexer);
       case QL:
         // Plug in your QL Ranker
         break;

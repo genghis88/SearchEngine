@@ -132,7 +132,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   private HashMap<String,SkipPointer> skipPointerMap;
   private long totalWordsInCorpus = 0;
   private int skipSteps;
-  private HashMap<String, Integer> urlToDocId = new HashMap<String, Integer>();
+  private HashMap<String, Integer> urlToDocId;
   public IndexerInvertedCompressed(Options options) {
     super(options);
     System.out.println("Using Indexer: " + this.getClass().getSimpleName());
@@ -149,7 +149,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
 	    HashMap<String,Integer> lastDocInserted = new HashMap<String,Integer>();
 	    for (final File fileEntry : corpusDirectory.listFiles()) {
 	      if (!fileEntry.isDirectory()) {
-	    	String url = fileEntry.getName().toLowerCase();
+	    	String url = fileEntry.getAbsolutePath();
 	        String docTitle = "";
 	        StringBuilder sb = new StringBuilder();
 	        org.jsoup.nodes.Document doc = Jsoup.parse(fileEntry, "UTF-8");
@@ -210,6 +210,7 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   
   @Override
   public void constructIndex() throws IOException {
+	urlToDocId = new HashMap<String, Integer>();
 	skipSteps = _options.skips;
 	if(_options._corpus.equals("parse"))
     {
@@ -299,6 +300,8 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     
     DocumentIndexed doc = new DocumentIndexed(_documents.size());
     doc.setTitle(title);
+    doc.setUrl(title);
+    urlToDocId.put(title, doc._docid);
     doc._normfactor = Math.sqrt(normfactor);
     doc._numwords = totalwords;
     _documents.add(doc);
@@ -660,85 +663,117 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   @Override
   public int documentTermFrequency(String term, String url) {
     //SearchEngine.Check(false, "Not implemented!");
+	 List<Integer> details = new ArrayList<Integer>();
 	 if(!urlToDocId.containsKey(url))
 		return 0;
     int docid = urlToDocId.get(url);
     PostingList p = index.get(term);
-    int currdocid = 0;
     int j = 0;
+    j = getDocumentDetail(p,j,details);
+    int currdocid = details.get(0);
+    
+    
     if(skipPointerMap.containsKey(term))
-    {
-    	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
-    	currdocid = pair.getDocid();
-    	j = (int )pair.getPos();
-    	if(currdocid == -1)
-    	{
-    		int temp[] = p.get(0);
-    		currdocid = temp[0];
-    		j = temp[1];
-    	}    	
-    }
-    else
-    {
-    	return 0;
-    }
+      {
+      	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
+      	currdocid = pair.getDocid();
+      	j = (int )pair.getPos();
+      	if(currdocid == -1 || currdocid > docid)
+      	{
+      		j = getDocumentDetail(p,0,details);
+      		currdocid = details.get(0);
+      	}    	
+      }
     
-    if(currdocid == docid)
-    {	
-    	if(j == -1)
-    		return 0;
-    	
-    	int [] temp = p.get(j);
-    	
-    	if(temp == null)
-    		return 0;
-    	
-    	if(temp[0] == -1)
-    		return 0;
-    	
-    	return temp[0];
+    while(j < p.getCount() && j != -2) {
+        details.clear();
+        j = getDocumentDetail(p, j, details);
+        
+        if(j == -2)
+        	break;
+        currdocid += details.get(0);
+        if(currdocid == docid)
+        	return details.get(1);
+        if(currdocid > docid)
+            return 0;
+        
     }
-    
-    int count = 0;
-    while(currdocid < docid)
-  	{
-    	if(j == -1)
-    		return 0;
-    	
-    	int [] temp = p.get(j);
-    	
-    	if(temp == null)
-    		return 0;
-    	
-    	if(temp[0] == -1)
-    		return 0;
-    	
-    	count = temp[0];
-    	
-    	for(int i = 0; i < count; i++)
-    	{
-    		if(temp[1] == -1)
-        		return 0;
-    		temp = p.get(temp[1]);
-    	}
-    	
-    	if(temp[1] == -1)
-    		return 0;
-		
-    	temp = p.get(temp[1]);
-    	
-    	currdocid += temp[0];
-    	j = temp[1];
-    }
-    
-    if(currdocid == docid)
-    { 	
-    	if(j != -1)
-    	{
-    		int temp[] = p.get(j);
-    		return temp[0];
-    	}
-    }
+//    int currdocid = 0;
+//    int j = 0;
+//    if(skipPointerMap.containsKey(term))
+//    {
+//    	SkipPointer.Pair pair = skipPointerMap.get(term).search(docid);
+//    	currdocid = pair.getDocid();
+//    	j = (int )pair.getPos();
+//    	if(currdocid == -1)
+//    	{
+//    		int temp[] = p.get(0);
+//    		currdocid = temp[0];
+//    		j = temp[1];
+//    	}    	
+//    }
+//    else
+//    {
+//    	return 0;
+//    }
+//    
+//    if(currdocid == docid)
+//    {	
+//    	if(j == -1)
+//    		return 0;
+//    	
+//    	int [] temp = p.get(j);
+//    	
+//    	if(temp == null)
+//    		return 0;
+//    	
+//    	if(temp[0] == -1)
+//    		return 0;
+//    	
+//    	return temp[0];
+//    }
+//    
+//    int count = 0;
+//    while(currdocid < docid)
+//  	{
+//    	if(j == -1)
+//    		return 0;
+//    	
+//    	int [] temp = p.get(j);
+//    	
+//    	if(temp == null)
+//    		return 0;
+//    	
+//    	if(temp[0] == -1)
+//    		return 0;
+//    	
+//    	count = temp[0];
+//    	
+//    	for(int i = 0; i < count; i++)
+//    	{
+//    		if(temp[1] == -1)
+//        		return 0;
+//    		temp = p.get(temp[1]);
+//    	}
+//    	
+//    	if(temp[1] == -1)
+//    		return 0;
+//		
+//    	temp = p.get(temp[1]);
+//    	
+//    	currdocid += temp[0];
+//    	j = temp[1];
+//    }
+//    
+//    
+//    if(currdocid == docid)
+//    { 	
+//    	if(j != -1)
+//    	{
+//    		int temp[] = p.get(j);
+//    		return temp[0];
+//    	}
+//    }
     return 0;
   }
   

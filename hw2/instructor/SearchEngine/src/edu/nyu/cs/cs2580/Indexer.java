@@ -1,7 +1,6 @@
 package edu.nyu.cs.cs2580;
 
 import java.io.IOException;
-
 import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 /**
@@ -29,7 +28,7 @@ public abstract class Indexer {
   // Subclasses should populate those fields properly.
   protected int _numDocs = 0;
   protected long _totalTermFrequency = 0;
-
+  //public HashMap<String, Integer> urlToDocId = new HashMap<String, Integer>();
   // Provided for serialization.
   public Indexer() { }
 

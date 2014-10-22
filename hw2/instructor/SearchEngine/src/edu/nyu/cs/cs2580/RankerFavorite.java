@@ -1,5 +1,6 @@
 package edu.nyu.cs.cs2580;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -23,6 +24,8 @@ public class RankerFavorite extends Ranker
   @Override
   public Vector<ScoredDocument> runQuery(Query query, int numResults) {
     Queue<ScoredDocument> rankQueue = new PriorityQueue<ScoredDocument>();
+    //int x = _indexer.documentTermFrequency("web", "world wide web");
+    //System.out.println(x);
     Document doc = null;
     double totalscore=0.0;
     int docid = -1;
