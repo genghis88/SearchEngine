@@ -12,11 +12,9 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 
 public class CosineRanker extends Ranker
 {
-    public Indexer myindexer;
     public CosineRanker(Options options,
-        CgiArguments arguments, Indexer indexer) {
+      CgiArguments arguments, Indexer indexer) {
       super(options, arguments, indexer);
-      myindexer = indexer;
       System.out.println("Using Ranker: " + this.getClass().getSimpleName());
     }
     @Override
@@ -24,12 +22,12 @@ public class CosineRanker extends Ranker
       Queue<ScoredDocument> rankQueue = new PriorityQueue<ScoredDocument>();
       Document doc = null;
       int docid = -1;
-      while ((doc = _indexer.nextDocument(query, docid)) != null) {
-        HashMap<String, Double> qv = TFIDF.CalculateQueryVector(query._query, myindexer);
+      while ((doc = _indexer.nextDoc(query, docid)) != null) {
+        HashMap<String, Double> qv = TFIDF.CalculateQueryVector(query._query, _indexer);
 
         // Get the document vector. For hw1, you don't have to worry about the
         // details of how index works.
-        HashMap<String, Double> dv = TFIDF.CalculateDocumentVector(doc, query._query, myindexer);
+        HashMap<String, Double> dv = TFIDF.CalculateDocumentVector(doc, query._query, _indexer);
         Set<String> A = qv.keySet();
         Set<String> B = dv.keySet();
         Set<String> keys = qv.size() < dv.size() ? A : B;
@@ -44,8 +42,7 @@ public class CosineRanker extends Ranker
         
         double denominator = Math.sqrt(dena)* denb;
         
-        // Score the document. Here we have provided a very simple ranking model,
-        // where a document is scored 1.0 if it gets hit by at least one query term.
+        
         double score = 0.0;
         for (String key: keys){
           double temp1 = 0.0;

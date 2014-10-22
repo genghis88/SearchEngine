@@ -113,6 +113,8 @@ public class DeltaCompression extends Compression implements Serializable{
 		// TODO Auto-generated method stub
 		int unary = 0;
 		int i = pos;
+		if(i < 0)
+			System.out.println("culprit");
 		while(b.get(i))
 		{
 			unary++;

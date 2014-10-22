@@ -33,7 +33,7 @@ public class TFIDF {
 		for(String key : keys)
 		{
 			int nd = indexer.corpusDocFrequencyByTerm(key);
-			double weight = (Math.log((double)counts.get(key)) + 1.0)*Math.log((N*1.0)/nd);
+			double weight = (Math.log((double)counts.get(key) + 1.0) + 1.0)*Math.log((N*1.0)/nd);
 			denominator += weight*weight;
 			vector.put(key, weight);
 		}

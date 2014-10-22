@@ -22,7 +22,7 @@ import edu.nyu.cs.cs2580.SearchEngine.Options;
 public abstract class Indexer {
   // Options to configure each concrete Indexer, do not serialize.
   protected Options _options = null;
-  public long totalWordsInCorpus = 0;
+  public abstract long getTotalWordsInCorpus();
   // In-memory data structures populated once for each server. Those fields
   // are populated during index loading time and must not be modified during
   // serving unless they are made thread-safe. For comments, see APIs below.
@@ -111,7 +111,8 @@ public abstract class Indexer {
   // Number of term occurrences in the corpus. If a term appears 10 times, it
   // will be counted 10 times.
   public final long totalTermFrequency() { return _totalTermFrequency; }
-  public long getTotalTokensCorpus(int tokenwordcount) {return 0;}
+  
+  public abstract long getTotalPhrasesCorpus(int tokenwordcount);
   // Number of documents in which {@code term} appeared, over the full corpus.
   public abstract int corpusDocFrequencyByTerm(String term);
 
@@ -136,12 +137,8 @@ public abstract class Indexer {
       } else if (options._indexerType.equals("inverted-occurrence")) {
         return new IndexerInvertedOccurrence(options);
       } else if (options._indexerType.equals("inverted-compressed")) {
-        return new InvertedIndexerDelta(options);
-      } else if (options._indexerType.equals("inverted-delta")) {
-        return new InvertedIndexerDelta(options);
-      } else if (options._indexerType.equals("inverted-comp")) {
-        return new IndexerInvertedComp(options);
-      }
+        return new IndexerInvertedCompressed(options);
+      } 
       return null;
     }
   }

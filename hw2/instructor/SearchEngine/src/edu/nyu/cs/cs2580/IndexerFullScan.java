@@ -91,7 +91,8 @@ class IndexerFullScan extends Indexer implements Serializable {
    * @param content
    */
   private void processDocument(String content) {
-    Scanner s = new Scanner(content).useDelimiter("\t");
+    @SuppressWarnings("resource")
+	Scanner s = new Scanner(content).useDelimiter("\t");
 
     String title = s.next();
     Vector<Integer> titleTokens = new Vector<Integer>();
@@ -242,5 +243,17 @@ class IndexerFullScan extends Indexer implements Serializable {
     // TODO Auto-generated method stub
     return null;
   }
+
+@Override
+public long getTotalWordsInCorpus() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public long getTotalPhrasesCorpus(int tokenwordcount) {
+	// TODO Auto-generated method stub
+	return 0;
+}
 
 }

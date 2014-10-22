@@ -15,8 +15,8 @@ public class SkipPointer implements Serializable {
 		/**
      * 
      */
-    private static final long serialVersionUID = -2637103976834923929L;
-    private int docid;
+	  	private static final long serialVersionUID = -2637103976834923929L;
+    	private int docid;
 		private long pos;
 		public int getDocid() {
 			return docid;

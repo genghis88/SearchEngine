@@ -323,7 +323,7 @@ private void processDocument(String title,
    * In HW2, you should be using {@link DocumentIndexed}
    */
   @Override
-  public Document nextDoc(Query query, int docid) {
+  public Document nextDocument(Query query, int docid) {
     int [] docids = new int[query._tokens.size()];
     int i = 0;
     boolean flag = true;
@@ -362,7 +362,7 @@ private void processDocument(String title,
   }
   
   @Override
-  public Document nextDocument(Query query, int docid) {
+  public Document nextDoc(Query query, int docid) {
     DocumentIndexed [] docs = new DocumentIndexed[query._tokens.size()];
     int i = 0;
     boolean flag = true;
@@ -405,7 +405,7 @@ private void processDocument(String title,
       d._numwords = d1._numwords;
       return d;
     }
-    return nextDocument(query, maxDocId-1);
+    return nextDoc(query, maxDocId-1);
   }
   
   private List<Integer> getDocumentDetails(Query query, int docid) {
@@ -678,4 +678,16 @@ private void processDocument(String title,
     }
     return 0;
   }
+
+@Override
+public long getTotalWordsInCorpus() {
+	// TODO Auto-generated method stub
+	return 0;
+}
+
+@Override
+public long getTotalPhrasesCorpus(int tokenwordcount) {
+	// TODO Auto-generated method stub
+	return 0;
+}
 }
