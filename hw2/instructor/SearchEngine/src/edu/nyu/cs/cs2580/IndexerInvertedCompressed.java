@@ -654,12 +654,16 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
   
   @Override
   public int corpusTermFrequency(String term) {
+	if(term.contains(" "))
+	      return corpusPhraseFrequency(term);
+	 
 	if(index.containsKey(term))
 		return index.get(term).getCorpusTermFrequency();
 	else
 		return 0;
   }
 
+  
   @Override
   public int documentTermFrequency(String term, String url) {
     //SearchEngine.Check(false, "Not implemented!");
@@ -795,7 +799,24 @@ public class IndexerInvertedCompressed extends Indexer implements Serializable{
     return numtokenscorpus;
   }
 
-
+  public int corpusPhraseFrequency(String term)
+  {
+    Document doc = null;
+    int totalphrases=0;
+    String quotedterm = "\"" + term + "\"";
+    Query query = new QueryPhrase(quotedterm);
+    query.processQuery();
+    int docid = -1;
+    while ((doc = nextDocument(query, docid)) != null) {
+      DocumentIndexed temp = (DocumentIndexed)doc;
+      List<Integer> postingList= temp.getDocumentDetails();
+      totalphrases += postingList.get(0);
+      docid = doc._docid;
+    }
+    return totalphrases;
+  }
+  
+  
   @Override
   public Document nextDoc(Query query, int docid) {
     DocumentIndexed [] docs = new DocumentIndexed[query._tokens.size()];
